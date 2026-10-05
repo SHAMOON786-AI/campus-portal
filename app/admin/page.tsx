@@ -1,94 +1,103 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [pendingJobs, setPendingJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchPendingJobs();
+    fetchAllJobs();
   }, []);
 
-  const fetchPendingJobs = async () => {
-    // Fetch only jobs that need approval
-    const { data, error } = await supabase
-      .from("jobs")
-      .select("*")
-      .eq("status", "pending");
-    
-    if (data) setPendingJobs(data);
+  const fetchAllJobs = async () => {
+    const { data } = await supabase.from("jobs").select("*");
+    if (data) setJobs(data);
   };
 
-  const handleUpdateJobStatus = async (jobId: string, newStatus: string) => {
+  const handleJobStatus = async (jobId: string, status: string) => {
     const { error } = await supabase
       .from("jobs")
-      .update({ status: newStatus })
+      .update({ status })
       .eq("id", jobId);
 
     if (error) {
-      alert("Error updating job: " + error.message);
+      alert("Error updating job status: " + error.message);
     } else {
-      // Remove the job from the screen once approved/rejected
-      setPendingJobs(pendingJobs.filter(job => job.id !== jobId));
+      alert(`Job status updated to ${status}!`);
+      fetchAllJobs();
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
-
   return (
-    <main className="flex min-h-screen flex-col items-center p-12 bg-black text-white">
-      <div className="w-full max-w-4xl p-8 bg-gray-900 rounded-lg border border-gray-800">
-        
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-purple-400">Admin Dashboard</h1>
-          <button 
-            onClick={handleSignOut}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-semibold transition-colors"
-          >
-            Sign Out
-          </button>
+    <div className="min-h-screen bg-slate-950 text-white p-8 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+            Admin Governance Portal
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Moderate job postings and oversee platform compliance.</p>
         </div>
+        <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs px-4 py-2 rounded-full font-semibold">
+          System Admin Active
+        </span>
+      </div>
 
-        <h2 className="text-xl font-semibold mb-4">Pending Job Approvals</h2>
-        
-        {pendingJobs.length === 0 ? (
-          <p className="text-gray-400 bg-gray-800 p-4 rounded border border-gray-700">No pending jobs to review.</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+        <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-xl">
+          <p className="text-slate-400 text-xs uppercase font-semibold">Total Platform Listings</p>
+          <p className="text-4xl font-black text-purple-400 mt-2">{jobs.length}</p>
+        </div>
+        <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-xl">
+          <p className="text-slate-400 text-xs uppercase font-semibold">Approved Openings</p>
+          <p className="text-4xl font-black text-emerald-400 mt-2">{jobs.filter(j => j.status === 'approved').length}</p>
+        </div>
+        <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-xl">
+          <p className="text-slate-400 text-xs uppercase font-semibold">Pending Approvals</p>
+          <p className="text-4xl font-black text-amber-400 mt-2">{jobs.filter(j => j.status === 'pending' || !j.status).length}</p>
+        </div>
+      </div>
+
+      <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <h2 className="text-xl font-bold mb-4 text-pink-300">🛡️ Job Moderation & Approvals</h2>
+        {jobs.length === 0 ? (
+          <p className="text-slate-400 text-sm italic">No job listings found in the system database.</p>
         ) : (
-          <div className="flex flex-col gap-4">
-            {pendingJobs.map((job) => (
-              <div key={job.id} className="p-5 border border-gray-700 rounded bg-gray-800 flex justify-between items-center">
+          <div className="space-y-4">
+            {jobs.map((job) => (
+              <div key={job.id} className="bg-slate-950 border border-slate-800 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                  <h3 className="font-bold text-xl text-blue-400">{job.title}</h3>
-                  <p className="text-sm font-semibold text-gray-300">{job.company}</p>
-                  <p className="text-sm text-gray-400 mt-2">{job.description}</p>
-                  <p className="text-xs font-bold text-yellow-500 mt-2">Required CGPA: {job.min_cgpa}</p>
+                  <h3 className="font-bold text-white text-lg">{job.title}</h3>
+                  <p className="text-xs text-blue-400 font-medium">{job.company || "Company"} • Min CGPA: {job.min_cgpa}</p>
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-1">{job.description}</p>
                 </div>
-                
-                <div className="flex flex-col gap-2 ml-4 min-w-[100px]">
-                  <button 
-                    onClick={() => handleUpdateJobStatus(job.id, 'approved')} 
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm"
-                  >
-                    Approve
-                  </button>
-                  <button 
-                    onClick={() => handleUpdateJobStatus(job.id, 'rejected')} 
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors text-sm"
-                  >
-                    Reject
-                  </button>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs px-3 py-1.5 rounded-lg border uppercase font-semibold ${
+                    job.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  }`}>
+                    {job.status || 'pending'}
+                  </span>
+                  {job.status !== 'approved' ? (
+                    <button
+                      onClick={() => handleJobStatus(job.id, 'approved')}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all"
+                    >
+                      Approve ✓
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleJobStatus(job.id, 'rejected')}
+                      className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all"
+                    >
+                      Reject ✕
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
