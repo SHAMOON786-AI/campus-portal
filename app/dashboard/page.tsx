@@ -7,11 +7,10 @@ import { supabase } from "../../lib/supabase";
 export default function StudentDashboard() {
   const router = useRouter();
   const [jobs, setJobs] = useState<any[]>([]);
-  // NEW: State to hold the full application details (including status)
   const [myApplications, setMyApplications] = useState<any[]>([]);
-  
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchJobs();
@@ -29,132 +28,119 @@ export default function StudentDashboard() {
   const fetchAppliedJobs = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    // NEW: Fetch the status alongside the job_id
     const { data } = await supabase
       .from("applications")
-      .select("job_id, status")
+      .select("*")
       .eq("student_id", user.id);
-    if (data) {
-      setMyApplications(data);
-    }
+    if (data) setMyApplications(data);
   };
 
   const handleApply = async (jobId: string) => {
-    if (!resumeFile) {
-      alert("Please select a resume PDF to upload before applying.");
-      return;
-    }
+    try {
+      setUploading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("Please log in first.");
+        return;
+      }
 
-    setUploading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+      let resumeUrl = "";
+      if (resumeFile) {
+        const fileExt = resumeFile.name.split(".").pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("resumes")
+          .upload(fileName, resumeFile);
 
-    const fileExt = resumeFile.name.split('.').pop();
-    const fileName = `${user.id}-${jobId}-${Math.random()}.${fileExt}`;
-    
-    const { error: uploadError } = await supabase.storage
-      .from("resumes")
-      .upload(fileName, resumeFile);
+        if (uploadError) throw uploadError;
 
-    if (uploadError) {
-      alert("Error uploading resume: " + uploadError.message);
-      setUploading(false);
-      return;
-    }
+        const { data: publicUrlData } = supabase.storage
+          .from("resumes")
+          .getPublicUrl(fileName);
+        resumeUrl = publicUrlData.publicUrl;
+      }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("resumes")
-      .getPublicUrl(fileName);
-
-    const { error: dbError } = await supabase
-      .from("applications")
-      .insert([{ 
-        job_id: jobId, 
+      const { error } = await supabase.from("applications").insert({
+        job_id: jobId,
         student_id: user.id,
-        resume_url: publicUrl 
-      }]);
+        resume_url: resumeUrl,
+        status: "applied",
+      });
 
-    if (dbError) {
-      alert("Error applying: " + dbError.message);
-    } else {
-      alert("Application and resume submitted successfully!");
-      // Instantly update UI with the new 'applied' status
-      setMyApplications([...myApplications, { job_id: jobId, status: 'applied' }]);
-      setResumeFile(null); 
+      if (error) throw error;
+
+      alert("Application submitted successfully!");
+      fetchAppliedJobs();
+    } catch (error: any) {
+      alert("Error applying: " + error.message);
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+  // Filter jobs dynamically based on search input
+  const filteredJobs = jobs.filter((job) =>
+    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.company.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-12 bg-black text-white">
-      <div className="w-full max-w-4xl p-8 bg-gray-900 rounded-lg border border-gray-800">
-        
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Student Dashboard</h1>
-          <div className="flex gap-4">
-            <button onClick={() => router.push("/profile")} className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded font-semibold transition-colors">
-              My Profile
-            </button>
-            <button onClick={handleSignOut} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-semibold transition-colors">
-              Sign Out
-            </button>
-          </div>
-        </div>
+    <main className="p-8 max-w-6xl mx-auto text-white">
+      <h1 className="text-3xl font-bold mb-6">Student Dashboard</h1>
 
-        <h2 className="text-xl font-semibold mb-4">Available Approved Jobs</h2>
-        
-        {jobs.length === 0 ? (
-          <p className="text-gray-400">No jobs available right now.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {jobs.map((job) => {
-              // NEW: Find the specific application to check its real-time status
-              const application = myApplications.find(app => app.job_id === job.id);
-              const hasApplied = !!application;
-              
-              return (
-                <div key={job.id} className="p-6 border border-gray-700 rounded bg-gray-800">
-                  <h3 className="font-bold text-xl text-blue-400">{job.title}</h3>
-                  <p className="text-sm font-semibold text-gray-300">{job.company}</p>
-                  <p className="text-sm text-gray-400 mt-2 mb-4">{job.description}</p>
-                  
-                  {hasApplied ? (
-                    // NEW: Dynamic color coding based on application status
-                    <button disabled className={`font-bold py-2 px-4 rounded cursor-not-allowed uppercase text-sm tracking-wider ${
-                      application.status === 'shortlisted' ? 'bg-green-900/50 text-green-400 border border-green-700' :
-                      application.status === 'rejected' ? 'bg-red-900/50 text-red-400 border border-red-700' :
-                      'bg-gray-700 text-gray-400 border border-gray-600'
-                    }`}>
-                      {application.status}
-                    </button>
-                  ) : (
-                    <div className="mt-4 pt-4 border-t border-gray-700 flex flex-col gap-3">
-                      <label className="text-sm text-gray-300 font-semibold">Upload Resume (PDF)</label>
-                      <input 
-                        type="file" 
-                        accept="application/pdf"
-                        onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                        className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-900 file:text-blue-300 hover:file:bg-blue-800 cursor-pointer"
-                      />
-                      <button 
-                        onClick={() => handleApply(job.id)}
-                        disabled={uploading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-max mt-2 transition-colors disabled:opacity-50"
-                      >
-                        {uploading ? "Uploading..." : "Submit Application"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+      {/* Statistics Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-gray-800/80 border border-gray-700 p-5 rounded-2xl backdrop-blur-sm shadow-lg">
+          <p className="text-gray-400 text-sm font-medium">Active Opportunities</p>
+          <p className="text-3xl font-extrabold text-blue-400 mt-1">{jobs.length}</p>
+        </div>
+        <div className="bg-gray-800/80 border border-gray-700 p-5 rounded-2xl backdrop-blur-sm shadow-lg">
+          <p className="text-gray-400 text-sm font-medium">My Applications</p>
+          <p className="text-3xl font-extrabold text-emerald-400 mt-1">{myApplications.length}</p>
+        </div>
+        <div className="bg-gray-800/80 border border-gray-700 p-5 rounded-2xl backdrop-blur-sm shadow-lg">
+          <p className="text-gray-400 text-sm font-medium">Portal Access</p>
+          <p className="text-3xl font-extrabold text-purple-400 mt-1">Verified Student</p>
+        </div>
+      </div>
+
+      {/* Search Input Bar */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search by job title or company name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-md"
+        />
+      </div>
+
+      {/* Job Listings Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {filteredJobs.map((job) => (
+          <div key={job.id} className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg hover:border-gray-600 transition-all">
+            <h2 className="text-xl font-semibold">{job.title}</h2>
+            <p className="text-blue-400 font-medium">{job.company}</p>
+            <p className="mt-2 text-sm text-gray-300">{job.description}</p>
+            <p className="mt-4 text-xs text-gray-400">Min CGPA Required: {job.min_cgpa}</p>
+
+            <div className="mt-4 pt-4 border-t border-gray-700 flex flex-col gap-3">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+              />
+              <button
+                onClick={() => handleApply(job.id)}
+                disabled={uploading}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl transition-all disabled:opacity-50 shadow-md"
+              >
+                {uploading ? "Uploading..." : "Submit Application"}
+              </button>
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </main>
   );
