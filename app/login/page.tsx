@@ -1,92 +1,111 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
+import { useRouter } from "next/navigation";
 
-export default function Login() {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
 
-  const handleSignUp = async () => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setMessage(error.message);
-    else setMessage("Check your email for the confirmation link!");
-  };
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-  const handleSignIn = async () => {
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (authError) {
-      setMessage(authError.message);
-      return;
-    }
-
-    if (authData.user) {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", authData.user.id)
-        .single();
-
-      if (profileError) {
-        setMessage("Error fetching user profile.");
-        return;
-      }
-
-      // We added this popup to see exactly what the database is returning!
-      
-
-      if (profileData.role === "admin") {
-        router.push("/admin");
-      } else if (profileData.role === "recruiter") {
-        router.push("/recruiter");
+    try {
+      if (isSignUp) {
+        // Register a new user
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        alert("Registration successful! You can now log in.");
+        setIsSignUp(false);
       } else {
-        router.push("/dashboard");
+        // Log in existing user
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        
+        // Redirect to the landing page to choose a portal
+        router.push("/");
       }
+    } catch (error: any) {
+      alert("Authentication Error: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-black">
-      <div className="w-full max-w-sm p-8 bg-gray-900 rounded-lg shadow-md border border-gray-800">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">Campus Portal Login</h1>
-        
-        <input
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-3 mb-4 bg-gray-800 text-white rounded border border-gray-700"
-        />
-        
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-3 mb-6 bg-gray-800 text-white rounded border border-gray-700"
-        />
-        
-        <div className="flex gap-4">
-          <button 
-            onClick={handleSignIn} 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded transition-colors"
-          >
-            Sign In
-          </button>
-          <button 
-            onClick={handleSignUp} 
-            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold p-3 rounded transition-colors"
-          >
-            Sign Up
-          </button>
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 p-8 rounded-2xl shadow-2xl backdrop-blur-xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black text-white tracking-tight">
+            {isSignUp ? "Create an Account" : "Welcome Back"}
+          </h1>
+          <p className="text-slate-400 text-sm mt-2">
+            {isSignUp 
+              ? "Join the next-gen campus placement portal." 
+              : "Enter your credentials to access your dashboard."}
+          </p>
         </div>
 
-        {message && <p className="mt-4 text-center text-sm text-yellow-400">{message}</p>}
+        <form onSubmit={handleAuth} className="space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              placeholder="you@university.edu"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+          >
+            {loading ? "Processing..." : isSignUp ? "Sign Up 🚀" : "Secure Login 🔒"}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            {isSignUp 
+              ? "Already have an account? Sign in here." 
+              : "Don't have an account? Create one now."}
+          </button>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
