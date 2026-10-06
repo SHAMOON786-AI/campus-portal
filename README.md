@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎓 AI-Powered Campus Placement & Internship Management Portal
 
-## Getting Started
+A full-stack, end-to-end enterprise platform designed to manage university recruitment drives, candidate application pipelines, real-time status timelines, and interview scheduling. Built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Supabase**.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 🚀 For Students (`/dashboard`)
+* **AI Match Engine**: Displays optimal profile matching percentages for active university placement drives.
+* **Resume Management**: Seamless PDF/Docx resume upload storing securely in Supabase buckets.
+* **Live Application Timeline**: Real-time status tracking across stages (*Applied → AI Screening → Recruiter Review → Shortlisted / Interview / Hired*).
+* **Automated Notices**: Instant alerts if a recruiter withdraws or deletes a campus drive.
+* **Offer & Compensation Disclosure**: Secure viewing of finalized stipends and CTC packages upon hiring.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 💼 For Recruiters (`/recruiter`)
+* **Drive Publishing**: Create comprehensive job listings with role specifications, CGPA cutoffs, and location autocomplete matching major Indian IT hubs, state capitals, and global tech centers.
+* **Applicant Evaluation Pipeline**: Review candidate profiles, download resumes instantly, and update pipeline statuses.
+* **Interview Scheduling**: Integrated date-time picker (restricted to future dates with 24-hour clock formatting) to schedule candidate interviews.
+* **Compensation Assignment**: Direct input fields to assign and save official stipends or CTC packages.
+* **Drive Management**: Ability to delete or withdraw active job openings with automatic student notification sync.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠️ Tech Stack
+* **Frontend**: Next.js (React Server & Client Components), Tailwind CSS, Lucide Icons.
+* **Backend & Database**: Supabase (PostgreSQL, Row Level Security, Auth, and Storage).
+* **Language**: TypeScript.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## ⚙️ Getting Started Locally
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/SHAMOON786-AI/campus-portal.git](https://github.com/SHAMOON786-AI/campus-portal.git)
+   cd campus-portal

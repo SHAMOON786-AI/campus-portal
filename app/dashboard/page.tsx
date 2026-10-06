@@ -1,217 +1,314 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
 export default function StudentDashboard() {
-  const router = useRouter();
+  const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [myApplications, setMyApplications] = useState<any[]>([]);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [quickApplyMode, setQuickApplyMode] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [resumeFiles, setResumeFiles] = useState<{ [key: string]: File }>({});
 
   useEffect(() => {
-    fetchJobs();
-    fetchAppliedJobs();
+    fetchStudentData();
   }, []);
 
-  const fetchJobs = async () => {
-    const { data } = await supabase
+  const fetchStudentData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: appData, error } = await supabase
+      .from("applications")
+      .select("id, status, interview_date, offered_package, joining_date, reporting_time, reporting_place, resume_url, job_id, student_id, jobs(*)")
+      .eq("student_id", user.id);
+      
+    if (error) {
+      console.error("Error fetching student applications:", error.message);
+    }
+    if (appData) setApplications(appData);
+
+    const { data: jobData } = await supabase
       .from("jobs")
       .select("*")
       .eq("status", "approved");
-    if (data) setJobs(data);
-  };
-
-  const fetchAppliedJobs = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data } = await supabase
-      .from("applications")
-      .select("*, jobs(*)")
-      .eq("student_id", user.id);
-    if (data) setMyApplications(data);
+    if (jobData) setJobs(jobData);
   };
 
   const handleApply = async (jobId: string) => {
     try {
-      setUploading(true);
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert("Please log in first.");
-        return;
-      }
+      if (!user) return;
 
-      let resumeUrl = "";
-      if (resumeFile) {
-        const fileExt = resumeFile.name.split(".").pop();
-        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const file = resumeFiles[jobId];
+      let resumeUrl = "candidate_resume.pdf";
+
+      if (file) {
+        const filePath = `resumes/${user.id}-${Date.now()}-${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("resumes")
-          .upload(fileName, resumeFile);
+          .upload(filePath, file);
 
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from("resumes")
-          .getPublicUrl(fileName);
-        resumeUrl = publicUrlData.publicUrl;
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("resumes")
+            .getPublicUrl(filePath);
+          resumeUrl = publicUrlData.publicUrl;
+        } else {
+          resumeUrl = file.name;
+        }
       }
 
       const { error } = await supabase.from("applications").insert({
         job_id: jobId,
         student_id: user.id,
-        resume_url: resumeUrl,
         status: "applied",
+        resume_url: resumeUrl,
       });
 
       if (error) throw error;
-
-      alert("Application submitted successfully with AI match verification!");
-      fetchAppliedJobs();
-    } catch (error: any) {
-      alert("Error applying: " + error.message);
+      alert("Application submitted successfully with resume!");
+      fetchStudentData();
+    } catch (err: any) {
+      alert("Error applying: " + err.message);
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
-  const filteredJobs = jobs.filter((job) =>
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.company.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const formatInterviewDate = (dateString: string) => {
+    if (!dateString) return "Date & time pending update";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    const hours = String(d.getUTCHours()).padStart(2, '0');
+    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
+
+  const formatJoiningDate = (dateString: string) => {
+    if (!dateString) return "To be announced";
+    const [year, month, day] = dateString.split('-');
+    if (!year || !month || !day) return dateString;
+    return `${day}/${month}/${year}`;
+  };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden selection:bg-blue-500 selection:text-white pb-16">
-      {/* 3D Ambient Glowing Background Orbs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-      <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none animate-pulse delay-1000"></div>
-      <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none"></div>
-
-      <main className="relative z-10 p-8 max-w-6xl mx-auto">
-        {/* Header with live glowing status badge */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent drop-shadow-sm">
-              Student Dashboard Pro
-            </h1>
-            <p className="text-slate-400 mt-1 text-sm">AI-Powered Campus Placement & Internship Management Portal.</p>
-          </div>
-          <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-700/80 px-4 py-2 rounded-full backdrop-blur-xl shadow-lg shadow-black/40 self-start">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-semibold text-emerald-300 tracking-wide uppercase">AI Match Engine Active</span>
-          </div>
+    <div className="min-h-screen bg-slate-950 text-white p-8 max-w-6xl mx-auto space-y-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+            Student Dashboard Pro
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">AI-Powered Campus Placement & Internship Management Portal.</p>
         </div>
-
-        {/* 3D Elevated Statistics Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-          <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-700/70 p-6 rounded-2xl backdrop-blur-2xl shadow-[0_15px_30px_rgba(0,0,0,0.5)] hover:-translate-y-1.5 hover:border-blue-500/50 transition-all duration-300 group">
-            <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Active Opportunities</p>
-            <p className="text-4xl font-black text-blue-400 mt-2 group-hover:scale-105 transition-transform origin-left drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">{jobs.length}</p>
-          </div>
-          <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-700/70 p-6 rounded-2xl backdrop-blur-2xl shadow-[0_15px_30px_rgba(0,0,0,0.5)] hover:-translate-y-1.5 hover:border-emerald-500/50 transition-all duration-300 group">
-            <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">My Applications</p>
-            <p className="text-4xl font-black text-emerald-400 mt-2 group-hover:scale-105 transition-transform origin-left drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">{myApplications.length}</p>
-          </div>
-          <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-slate-700/70 p-6 rounded-2xl backdrop-blur-2xl shadow-[0_15px_30px_rgba(0,0,0,0.5)] hover:-translate-y-1.5 hover:border-purple-500/50 transition-all duration-300 group">
-            <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold">AI Profile Match</p>
-            <p className="text-3xl font-black text-purple-400 mt-2 group-hover:scale-105 transition-transform origin-left drop-shadow-[0_0_15px_rgba(168,85,247,0.3)]">96% Optimal</p>
-          </div>
+        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-full shadow-md">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">AI Match Engine Active</span>
         </div>
+      </div>
 
-        {/* Unique Feature: Interactive Application Status Timeline Tracker */}
-        <div className="mb-10 bg-slate-900/60 border border-slate-800 p-6 rounded-2xl backdrop-blur-xl shadow-[0_10px_25px_rgba(0,0,0,0.4)]">
-          <h2 className="text-xl font-bold mb-4 text-indigo-300 flex items-center gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-xl">
+          <p className="text-slate-400 text-xs uppercase font-semibold">Active Opportunities</p>
+          <p className="text-3xl font-black text-blue-400 mt-1">{jobs.length}</p>
+        </div>
+        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-xl">
+          <p className="text-slate-400 text-xs uppercase font-semibold">My Applications</p>
+          <p className="text-3xl font-black text-emerald-400 mt-1">{applications.length}</p>
+        </div>
+        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-xl">
+          <p className="text-slate-400 text-xs uppercase font-semibold">AI Profile Match</p>
+          <p className="text-3xl font-black text-purple-400 mt-1">96% Optimal</p>
+        </div>
+      </div>
+
+      {/* Live Application Status Timeline */}
+      <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-2xl backdrop-blur-xl">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-indigo-300 flex items-center gap-2">
             <span>⚡</span> Live Application Status Timeline
           </h2>
-          {myApplications.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">No active application timelines found. Submit an application below to track milestones!</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myApplications.map((app) => (
-                <div key={app.id} className="bg-slate-950/80 border border-slate-800 p-5 rounded-xl shadow-md">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-semibold text-white">{app.jobs?.title || "Position"}</h3>
-                    <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs px-2.5 py-1 rounded-full font-semibold uppercase">
+          <button
+            onClick={fetchStudentData}
+            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl transition-all border border-slate-700 flex items-center gap-1.5"
+          >
+            🔄 Refresh Status
+          </button>
+        </div>
+
+        {applications.length === 0 ? (
+          <p className="text-slate-400 text-sm italic py-4">You have not applied to any campus openings yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {applications.map((app) => {
+              const isHired = app.status?.toLowerCase() === 'hired';
+              const isInterview = app.status?.toLowerCase() === 'interview';
+              const isRemoved = app.status === 'Cancelled / Position Removed';
+
+              return (
+                <div key={app.id} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-4 hover:border-slate-700 transition-all">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-white text-lg">{app.jobs?.title || "Position Removed"}</h3>
+                      <p className="text-xs text-blue-400 font-medium">{app.jobs?.company || "Company"} ({app.jobs?.location || "Remote"})</p>
+                    </div>
+                    <span className={`text-xs px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider ${
+                      isRemoved ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                      isHired ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                      app.status?.toLowerCase() === 'shortlisted' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
+                      isInterview ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                      'bg-slate-900 text-slate-400 border-slate-800'
+                    }`}>
                       {app.status}
                     </span>
                   </div>
-                  {/* Milestone Visual Progress Steps */}
-                  <div className="flex items-center justify-between text-xs text-slate-400 mt-2 pt-3 border-t border-slate-800">
-                    <span className="text-emerald-400 font-medium">✓ Applied</span>
-                    <span className="text-emerald-400 font-medium">➔ AI Screening</span>
-                    <span className="text-slate-500">⏳ Recruiter Review</span>
+
+                  {!isRemoved && (
+                    <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-900">
+                      <span className="text-emerald-400 font-semibold">✓ Applied</span>
+                      <span>→</span>
+                      <span className={app.status?.toLowerCase() !== 'applied' ? 'text-emerald-400 font-semibold' : ''}>AI Screening</span>
+                      <span>→</span>
+                      <span className={['shortlisted', 'interview', 'hired'].includes(app.status?.toLowerCase()) ? 'text-emerald-400 font-semibold' : ''}>Recruiter Review</span>
+                    </div>
+                  )}
+
+                  {isRemoved ? (
+                    <div className="bg-red-950/40 border border-red-500/40 p-3.5 rounded-xl flex items-center gap-3 mt-3">
+                      <span className="text-red-400 text-xl">⚠️</span>
+                      <div>
+                        <p className="text-[11px] font-bold text-red-300 uppercase tracking-wide">Drive Status Notice</p>
+                        <p className="text-xs font-semibold text-white mt-0.5">This position has been withdrawn or removed by the recruiter.</p>
+                      </div>
+                    </div>
+                  ) : !isHired && (isInterview || app.interview_date) && (
+                    <div className="bg-amber-950/50 border border-amber-500/40 p-4 rounded-xl flex items-center gap-3 mt-3 shadow-md">
+                      <span className="text-amber-400 text-2xl">📅</span>
+                      <div>
+                        <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">Scheduled Interview Date & Time</p>
+                        <p className="text-sm font-black text-white mt-0.5">
+                          {formatInterviewDate(app.interview_date)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {isHired && (
+                    <div className="bg-emerald-950/60 border border-emerald-500/50 p-4 rounded-xl space-y-3 mt-3 shadow-md">
+                      <div className="flex items-center gap-3">
+                        <span className="text-emerald-400 text-2xl">💰</span>
+                        <div>
+                          <p className="text-[11px] font-bold text-emerald-300 uppercase tracking-wide">Official Offer & Compensation Package</p>
+                          <p className="text-sm font-black text-white mt-0.5">{app.offered_package || "Package details under final university review"}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-3 border-t border-emerald-800/50 text-xs">
+                        <div>
+                          <span className="text-emerald-300/80 block font-semibold text-[10px] uppercase">Joining Date</span>
+                          <strong className="text-white text-xs">{formatJoiningDate(app.joining_date)}</strong>
+                        </div>
+                        <div>
+                          <span className="text-emerald-300/80 block font-semibold text-[10px] uppercase">Reporting Time</span>
+                          <strong className="text-white text-xs">{app.reporting_time || "Pending"}</strong>
+                        </div>
+                        <div>
+                          <span className="text-emerald-300/80 block font-semibold text-[10px] uppercase">Reporting Place</span>
+                          <strong className="text-white text-xs truncate block" title={app.reporting_place}>{app.reporting_place || "Pending"}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Available Campus Drives */}
+      <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-2xl backdrop-blur-xl">
+        <h2 className="text-xl font-bold mb-4 text-emerald-400 flex items-center gap-2">
+          <span>🚀</span> Available Campus Drives
+        </h2>
+        {jobs.length === 0 ? (
+          <p className="text-slate-400 text-sm italic py-4">No approved job openings available right now.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {jobs.map((job) => {
+              const hasApplied = applications.some((app) => app.job_id === job.id && app.status !== 'Cancelled / Position Removed');
+
+              return (
+                <div key={job.id} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-4 hover:border-slate-700 transition-all flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-white text-lg">{job.title}</h3>
+                      <span className="text-[11px] bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2.5 py-0.5 rounded-md font-medium">
+                        ✨ 94% Match
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-xs text-blue-400 font-medium">{job.company}</p>
+                      <span className="text-xs text-slate-500">•</span>
+                      <p className="text-xs text-slate-300">📍 {job.location || "Remote"}</p>
+                    </div>
+                    <p className="text-xs text-slate-400 line-clamp-2 mt-2">{job.description}</p>
+                  </div>
+
+                  <div className="space-y-3 pt-3 border-t border-slate-900">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400">Min CGPA: <strong className="text-slate-200">{job.min_cgpa}</strong></span>
+                    </div>
+
+                    {hasApplied ? (
+                      <div className="w-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-bold py-3 px-4 rounded-xl text-center uppercase tracking-wide">
+                        ✓ Application Submitted Successfully
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-2 rounded-xl">
+                          <input
+                            type="file"
+                            accept=".pdf,.docx,.doc"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setResumeFiles({ ...resumeFiles, [job.id]: e.target.files[0] });
+                              }
+                            }}
+                            className="text-xs text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer w-full"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => handleApply(job.id)}
+                            disabled={loading}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
+                          >
+                            Quick Apply 🚀
+                          </button>
+                          <button
+                            onClick={() => handleApply(job.id)}
+                            disabled={loading}
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
+                          >
+                            Submit Application ✓
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 3D Glowing Search Input Bar */}
-        <div className="mb-8 relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 rounded-2xl blur-md opacity-40 group-hover:opacity-100 transition duration-500"></div>
-          <input
-            type="text"
-            placeholder="🔍 Search openings by title, skill, or company name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="relative w-full px-5 py-4 bg-slate-900 border border-slate-700 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-2xl transition-all"
-          />
-        </div>
-
-        {/* 3D Job Listings Grid with AI Match Badges */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredJobs.map((job) => (
-            <div 
-              key={job.id} 
-              className="bg-gradient-to-br from-slate-900/80 via-slate-900/60 to-slate-950/90 backdrop-blur-xl p-6 rounded-2xl border border-slate-700/80 shadow-[0_20px_40px_rgba(0,0,0,0.6)] hover:border-blue-500/60 hover:-translate-y-2 hover:shadow-[0_25px_50px_rgba(59,130,246,0.15)] transition-all duration-300 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex justify-between items-start gap-2">
-                  <h2 className="text-xl font-bold text-white tracking-tight">{job.title}</h2>
-                  {/* Unique AI Match Percentage Badge */}
-                  <span className="bg-purple-500/15 text-purple-300 border border-purple-500/30 text-xs px-3 py-1 rounded-full font-bold shadow-[0_0_10px_rgba(168,85,247,0.2)]">
-                    ✨ 94% Match
-                  </span>
-                </div>
-                <p className="text-blue-400 font-semibold mt-1">{job.company}</p>
-                <p className="mt-3 text-sm text-slate-300 leading-relaxed">{job.description}</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <span className="text-xs bg-slate-950 text-slate-400 px-3 py-1.5 rounded-lg border border-slate-800 shadow-inner">
-                    Min CGPA: <strong className="text-white">{job.min_cgpa}</strong>
-                  </span>
-                  <span className="text-xs bg-slate-950 text-emerald-400 px-3 py-1.5 rounded-lg border border-slate-800 shadow-inner font-medium">
-                    Verified Employer ✓
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-800 flex flex-col gap-3">
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                  className="text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer transition-all shadow-md"
-                />
-                <button
-                  onClick={() => handleApply(job.id)}
-                  disabled={uploading}
-                  className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all duration-300 shadow-[0_10px_20px_rgba(16,185,129,0.3)] disabled:opacity-50 active:scale-[0.98]"
-                >
-                  {uploading ? "AI Processing..." : "Quick Apply with AI Match 🚀"}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
