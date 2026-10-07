@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function StudentDashboard() {
+  const router = useRouter();
   const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [resumeFiles, setResumeFiles] = useState<{ [key: string]: File }>({});
 
   useEffect(() => {
     fetchStudentData();
@@ -22,9 +23,7 @@ export default function StudentDashboard() {
       .select("id, status, interview_date, offered_package, joining_date, reporting_time, reporting_place, resume_url, job_id, student_id, jobs(*)")
       .eq("student_id", user.id);
       
-    if (error) {
-      console.error("Error fetching student applications:", error.message);
-    }
+    if (error) console.error("Error fetching student applications:", error.message);
     if (appData) setApplications(appData);
 
     const { data: jobData } = await supabase
@@ -34,46 +33,9 @@ export default function StudentDashboard() {
     if (jobData) setJobs(jobData);
   };
 
-  const handleApply = async (jobId: string) => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const file = resumeFiles[jobId];
-      let resumeUrl = "candidate_resume.pdf";
-
-      if (file) {
-        const filePath = `resumes/${user.id}-${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from("resumes")
-          .upload(filePath, file);
-
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from("resumes")
-            .getPublicUrl(filePath);
-          resumeUrl = publicUrlData.publicUrl;
-        } else {
-          resumeUrl = file.name;
-        }
-      }
-
-      const { error } = await supabase.from("applications").insert({
-        job_id: jobId,
-        student_id: user.id,
-        status: "applied",
-        resume_url: resumeUrl,
-      });
-
-      if (error) throw error;
-      alert("Application submitted successfully with resume!");
-      fetchStudentData();
-    } catch (err: any) {
-      alert("Error applying: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
   };
 
   const formatInterviewDate = (dateString: string) => {
@@ -106,9 +68,19 @@ export default function StudentDashboard() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">AI-Powered Campus Placement & Internship Management Portal.</p>
         </div>
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-full shadow-md">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">AI Match Engine Active</span>
+        
+        {/* Updated Header with Sign Out Button */}
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-full shadow-md">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">AI Match Engine Active</span>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md flex items-center gap-2"
+          >
+            Sign Out 🚪
+          </button>
         </div>
       </div>
 
@@ -261,7 +233,7 @@ export default function StudentDashboard() {
                   </div>
 
                   <div className="space-y-3 pt-3 border-t border-slate-900">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-slate-400">Min CGPA: <strong className="text-slate-200">{job.min_cgpa}</strong></span>
                     </div>
 
@@ -270,37 +242,12 @@ export default function StudentDashboard() {
                         ✓ Application Submitted Successfully
                       </div>
                     ) : (
-                      <>
-                        <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-2 rounded-xl">
-                          <input
-                            type="file"
-                            accept=".pdf,.docx,.doc"
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                setResumeFiles({ ...resumeFiles, [job.id]: e.target.files[0] });
-                              }
-                            }}
-                            className="text-xs text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer w-full"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => handleApply(job.id)}
-                            disabled={loading}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
-                          >
-                            Quick Apply 🚀
-                          </button>
-                          <button
-                            onClick={() => handleApply(job.id)}
-                            disabled={loading}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1"
-                          >
-                            Submit Application ✓
-                          </button>
-                        </div>
-                      </>
+                      <Link
+                        href={`/apply/${job.id}`}
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                      >
+                        View Details & Apply 🚀
+                      </Link>
                     )}
                   </div>
                 </div>
