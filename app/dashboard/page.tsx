@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import Tilt from "react-parallax-tilt";
 import { supabase } from "../../lib/supabase";
 import { submitApplication } from "../actions";
 
@@ -141,8 +143,8 @@ export default function StudentDashboard() {
         <h2 className="text-xl font-bold mb-4 text-emerald-400">🚀 Available Campus Drives</h2>
         {jobs.length === 0 ? <p className="text-slate-400 text-sm italic">No approved job openings available right now.</p> : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {jobs.map((job) => (
-              <div key={job.id} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-3 flex flex-col justify-between hover:border-slate-700 transition-all">
+            {jobs.map((job, index) => (
+              <Tilt key={job.id} glareEnable={true} glareMaxOpacity={0.15} glareColor="#ffffff" glarePosition="all" scale={1.02} transitionSpeed={2000} tiltMaxAngleX={5} tiltMaxAngleY={5} className="h-full"><motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: index * 0.1 }} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-3 flex flex-col justify-between hover:border-slate-700 transition-all h-full shadow-xl">
                 <div>
                   <h3 className="font-bold text-white text-lg">{job.title}</h3>
                   <p className="text-xs text-blue-400 font-medium">{job.company}</p>
@@ -152,7 +154,7 @@ export default function StudentDashboard() {
                   <span className="text-xs text-slate-400">Min CGPA: <strong className="text-slate-200">{job.min_cgpa || 'None'}</strong> | Depts: <strong className="text-slate-200">{job.allowed_departments?.length ? job.allowed_departments.join(', ') : 'Any'}</strong></span>
                   <button onClick={() => handleApply(job.id)} disabled={loading} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition-all">Quick Apply 🚀</button>
                 </div>
-              </div>
+              </motion.div></Tilt>
             ))}
           </div>
         )}
@@ -163,8 +165,8 @@ export default function StudentDashboard() {
         <h2 className="text-xl font-bold mb-6 text-indigo-300">⚡ Application Status</h2>
         {applications.length === 0 ? <p className="text-slate-400 text-sm italic">You have not applied to any campus openings yet.</p> : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {applications.map((app) => (
-              <div key={app.id} onClick={() => setSelectedApp(app)} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-4 hover:border-blue-500 cursor-pointer transition-all shadow-lg hover:shadow-blue-500/20">
+            {applications.map((app, index) => (
+              <Tilt key={app.id} glareEnable={true} glareMaxOpacity={0.15} glareColor="#ffffff" glarePosition="all" scale={1.02} transitionSpeed={2000} tiltMaxAngleX={5} tiltMaxAngleY={5} className="h-full"><motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: index * 0.1 }} onClick={() => setSelectedApp(app)} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-4 hover:border-blue-500 cursor-pointer transition-all shadow-lg hover:shadow-blue-500/20 h-full">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold text-white text-lg">{app.jobs?.title || "Position Removed"}</h3>
@@ -197,7 +199,7 @@ export default function StudentDashboard() {
                     {app.joining_date && <p className="text-xs text-slate-400 mt-1">Joining: {new Date(app.joining_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>}
                   </div>
                 )}
-              </div>
+              </motion.div></Tilt>
             ))}
           </div>
         )}
