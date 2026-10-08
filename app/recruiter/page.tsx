@@ -330,13 +330,21 @@ export default function RecruiterDashboard() {
                 {/* Header info */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="flex items-start gap-3">
-                    <input type="checkbox" checked={selectedApplicants.has(app.id)} onChange={() => toggleSelectApplicant(app.id)} className="mt-1.5 w-4 h-4 rounded border-slate-700 bg-slate-900 accent-blue-600" />
+                    <input type="checkbox" checked={selectedApplicants.has(app.id)} onChange={() => toggleSelectApplicant(app.id)} className="mt-2 w-4 h-4 rounded border-slate-700 bg-slate-900 accent-blue-600" />
+                    {app.profiles?.profile_picture_url ? (
+                      <img src={app.profiles.profile_picture_url} alt="Profile" className="w-12 h-12 rounded-full object-cover border border-slate-700 mt-1 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedApplicantDetails(app)} />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-lg font-bold text-slate-500 border border-slate-700 mt-1 cursor-pointer hover:bg-slate-700 transition-colors" onClick={() => setSelectedApplicantDetails(app)}>
+                        {app.profiles?.name?.charAt(0) || "U"}
+                      </div>
+                    )}
                     <div>
-                      <button onClick={() => setSelectedApplicantDetails(app)} className="font-bold text-white text-lg hover:text-blue-400 text-left transition-colors">
+                      <button onClick={() => setSelectedApplicantDetails(app)} className="font-bold text-white text-lg hover:text-blue-400 text-left transition-colors flex items-center gap-2">
                         {app.profiles?.name || `Applicant ${app.student_id.substring(0, 8)}`}
+                        <span className="text-[10px] bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">View Profile</span>
                       </button>
                       <p className="text-xs text-slate-400 font-medium mt-1">CGPA: {app.profiles?.cgpa} | Branch: {app.profiles?.branch}</p>
-                      <p className="text-xs text-emerald-400 font-medium mt-1">Applied for: {app.jobs?.title}</p>
+                      <p className="text-xs text-emerald-400 font-medium mt-1">Applied for: <span className="text-emerald-300">{app.jobs?.title}</span></p>
                     </div>
                   </div>
                   
