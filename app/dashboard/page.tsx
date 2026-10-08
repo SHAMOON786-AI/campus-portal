@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { submitApplication } from "../actions";
 
 export default function StudentDashboard() {
-  const router = useRouter();
   const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false); const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [studentProfile, setStudentProfile] = useState<any>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", branch: "", cgpa: "", graduation_year: "", resume_url: "" });
 
   useEffect(() => {
     fetchStudentData();
@@ -18,45 +20,71 @@ export default function StudentDashboard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: appData, error } = await supabase
-      .from("applications")
-      .select("id, status, interview_date, offered_package, joining_date, reporting_time, reporting_place, resume_url, job_id, student_id, jobs(*)")
-      .eq("student_id", user.id);
-      
-    if (error) console.error("Error fetching student applications:", error.message);
+    // Fetch Profile
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    if (profile) {
+      setStudentProfile(profile);
+      setProfileForm(profile);
+    }
+
+    // Fetch Applications
+    const { data: appData } = await supabase.from("applications").select("*, jobs(*)").eq("student_id", user.id);
     if (appData) setApplications(appData);
 
-    const { data: jobData } = await supabase
-      .from("jobs")
-      .select("*")
-      .eq("status", "approved");
+    // Fetch Jobs
+    const { data: jobData } = await supabase.from("jobs").select("*").eq("status", "approved");
     if (jobData) setJobs(jobData);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const payload = {
+      id: user.id,
+      role: studentProfile?.role || "student",
+      email: user.email,
+      name: profileForm.name,
+      branch: profileForm.branch,
+      cgpa: parseFloat(profileForm.cgpa),
+      graduation_year: parseInt(profileForm.graduation_year),
+      resume_url: profileForm.resume_url,
+    };
+
+    const { error } = await supabase.from("profiles").upsert(payload);
+    setLoading(false);
+    if (error) {
+      alert("Error updating profile: " + error.message);
+    } else {
+      alert("Profile updated successfully!");
+      setIsEditingProfile(false);
+      fetchStudentData();
+    }
   };
 
-  const formatInterviewDate = (dateString: string) => {
-    if (!dateString) return "Date & time pending update";
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return dateString;
+  const handleApply = async (jobId: string) => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert("Please log in.");
+        return;
+      }
 
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const year = d.getUTCFullYear();
-    const hours = String(d.getUTCHours()).padStart(2, '0');
-    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
-
-    return `${day}/${month}/${year}, ${hours}:${minutes}`;
-  };
-
-  const formatJoiningDate = (dateString: string) => {
-    if (!dateString) return "To be announced";
-    const [year, month, day] = dateString.split('-');
-    if (!year || !month || !day) return dateString;
-    return `${day}/${month}/${year}`;
+      const result = await submitApplication(jobId, user.id);
+      if (!result.success) {
+        alert(result.error);
+        return;
+      }
+      alert("Application submitted successfully!");
+      fetchStudentData();
+    } catch (err: any) {
+      alert("Error applying: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,196 +94,151 @@ export default function StudentDashboard() {
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
             Student Dashboard Pro
           </h1>
-          <p className="text-slate-400 text-sm mt-1">AI-Powered Campus Placement & Internship Management Portal.</p>
-        </div>
-        
-        {/* Updated Header with Sign Out Button */}
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-full shadow-md">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">AI Match Engine Active</span>
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md flex items-center gap-2"
-          >
-            Sign Out 🚪
-          </button>
+          <p className="text-slate-400 text-sm mt-1">Manage Profile, Track Applications, Apply for Drives.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-xl">
-          <p className="text-slate-400 text-xs uppercase font-semibold">Active Opportunities</p>
-          <p className="text-3xl font-black text-blue-400 mt-1">{jobs.length}</p>
-        </div>
-        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-xl">
-          <p className="text-slate-400 text-xs uppercase font-semibold">My Applications</p>
-          <p className="text-3xl font-black text-emerald-400 mt-1">{applications.length}</p>
-        </div>
-        <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-xl">
-          <p className="text-slate-400 text-xs uppercase font-semibold">AI Profile Match</p>
-          <p className="text-3xl font-black text-purple-400 mt-1">96% Optimal</p>
-        </div>
-      </div>
-
-      {/* Live Application Status Timeline */}
+      {/* Profile Section */}
       <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-2xl backdrop-blur-xl">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-indigo-300 flex items-center gap-2">
-            <span>⚡</span> Live Application Status Timeline
-          </h2>
-          <button
-            onClick={fetchStudentData}
-            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl transition-all border border-slate-700 flex items-center gap-1.5"
-          >
-            🔄 Refresh Status
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-indigo-300 flex items-center gap-2"><span>🎓</span> My Profile</h2>
+          <button onClick={() => setIsEditingProfile(!isEditingProfile)} className="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl transition-all">
+            {isEditingProfile ? "Cancel" : "Edit Profile"}
           </button>
         </div>
 
-        {applications.length === 0 ? (
-          <p className="text-slate-400 text-sm italic py-4">You have not applied to any campus openings yet.</p>
+        {isEditingProfile ? (
+          <form onSubmit={handleUpdateProfile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" placeholder="Full Name" required value={profileForm.name || ""} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm" />
+            <input type="text" placeholder="Branch / Department (e.g. CSE)" required value={profileForm.branch || ""} onChange={e => setProfileForm({...profileForm, branch: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm" />
+            <input type="number" step="0.01" placeholder="CGPA" required value={profileForm.cgpa || ""} onChange={e => setProfileForm({...profileForm, cgpa: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm" />
+            <input type="number" placeholder="Graduation Year" required value={profileForm.graduation_year || ""} onChange={e => setProfileForm({...profileForm, graduation_year: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm" />
+            <input type="url" placeholder="Resume URL" required value={profileForm.resume_url || ""} onChange={e => setProfileForm({...profileForm, resume_url: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm md:col-span-2" />
+            <button type="submit" disabled={loading} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl md:col-span-2 shadow-md">Save Profile</button>
+          </form>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {applications.map((app) => {
-              const isHired = app.status?.toLowerCase() === 'hired';
-              const isInterview = app.status?.toLowerCase() === 'interview';
-              const isRemoved = app.status === 'Cancelled / Position Removed';
-
-              return (
-                <div key={app.id} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-4 hover:border-slate-700 transition-all">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-bold text-white text-lg">{app.jobs?.title || "Position Removed"}</h3>
-                      <p className="text-xs text-blue-400 font-medium">{app.jobs?.company || "Company"} ({app.jobs?.location || "Remote"})</p>
-                    </div>
-                    <span className={`text-xs px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider ${
-                      isRemoved ? 'bg-red-500/10 text-red-400 border-red-500/30' :
-                      isHired ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                      app.status?.toLowerCase() === 'shortlisted' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
-                      isInterview ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
-                      'bg-slate-900 text-slate-400 border-slate-800'
-                    }`}>
-                      {app.status}
-                    </span>
-                  </div>
-
-                  {!isRemoved && (
-                    <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-900">
-                      <span className="text-emerald-400 font-semibold">✓ Applied</span>
-                      <span>→</span>
-                      <span className={app.status?.toLowerCase() !== 'applied' ? 'text-emerald-400 font-semibold' : ''}>AI Screening</span>
-                      <span>→</span>
-                      <span className={['shortlisted', 'interview', 'hired'].includes(app.status?.toLowerCase()) ? 'text-emerald-400 font-semibold' : ''}>Recruiter Review</span>
-                    </div>
-                  )}
-
-                  {isRemoved ? (
-                    <div className="bg-red-950/40 border border-red-500/40 p-3.5 rounded-xl flex items-center gap-3 mt-3">
-                      <span className="text-red-400 text-xl">⚠️</span>
-                      <div>
-                        <p className="text-[11px] font-bold text-red-300 uppercase tracking-wide">Drive Status Notice</p>
-                        <p className="text-xs font-semibold text-white mt-0.5">This position has been withdrawn or removed by the recruiter.</p>
-                      </div>
-                    </div>
-                  ) : !isHired && (isInterview || app.interview_date) && (
-                    <div className="bg-amber-950/50 border border-amber-500/40 p-4 rounded-xl flex items-center gap-3 mt-3 shadow-md">
-                      <span className="text-amber-400 text-2xl">📅</span>
-                      <div>
-                        <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wide">Scheduled Interview Date & Time</p>
-                        <p className="text-sm font-black text-white mt-0.5">
-                          {formatInterviewDate(app.interview_date)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {isHired && (
-                    <div className="bg-emerald-950/60 border border-emerald-500/50 p-4 rounded-xl space-y-3 mt-3 shadow-md">
-                      <div className="flex items-center gap-3">
-                        <span className="text-emerald-400 text-2xl">💰</span>
-                        <div>
-                          <p className="text-[11px] font-bold text-emerald-300 uppercase tracking-wide">Official Offer & Compensation Package</p>
-                          <p className="text-sm font-black text-white mt-0.5">{app.offered_package || "Package details under final university review"}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-3 border-t border-emerald-800/50 text-xs">
-                        <div>
-                          <span className="text-emerald-300/80 block font-semibold text-[10px] uppercase">Joining Date</span>
-                          <strong className="text-white text-xs">{formatJoiningDate(app.joining_date)}</strong>
-                        </div>
-                        <div>
-                          <span className="text-emerald-300/80 block font-semibold text-[10px] uppercase">Reporting Time</span>
-                          <strong className="text-white text-xs">{app.reporting_time || "Pending"}</strong>
-                        </div>
-                        <div>
-                          <span className="text-emerald-300/80 block font-semibold text-[10px] uppercase">Reporting Place</span>
-                          <strong className="text-white text-xs truncate block" title={app.reporting_place}>{app.reporting_place || "Pending"}</strong>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-slate-300">
+            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Full Name</span><strong className="text-white text-base">{studentProfile?.name || "N/A"}</strong></div>
+            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Branch</span><strong className="text-white text-base">{studentProfile?.branch || "N/A"}</strong></div>
+            <div><span className="block text-slate-500 text-xs uppercase font-semibold">CGPA</span><strong className="text-white text-base">{studentProfile?.cgpa || "N/A"}</strong></div>
+            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Graduation Year</span><strong className="text-white text-base">{studentProfile?.graduation_year || "N/A"}</strong></div>
           </div>
         )}
       </div>
 
-      {/* Available Campus Drives */}
+      {/* Available Drives */}
       <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-2xl backdrop-blur-xl">
-        <h2 className="text-xl font-bold mb-4 text-emerald-400 flex items-center gap-2">
-          <span>🚀</span> Available Campus Drives
-        </h2>
-        {jobs.length === 0 ? (
-          <p className="text-slate-400 text-sm italic py-4">No approved job openings available right now.</p>
-        ) : (
+        <h2 className="text-xl font-bold mb-4 text-emerald-400">🚀 Available Campus Drives</h2>
+        {jobs.length === 0 ? <p className="text-slate-400 text-sm italic">No approved job openings available right now.</p> : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {jobs.map((job) => {
-              const hasApplied = applications.some((app) => app.job_id === job.id && app.status !== 'Cancelled / Position Removed');
-
-              return (
-                <div key={job.id} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-4 hover:border-slate-700 transition-all flex flex-col justify-between">
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-white text-lg">{job.title}</h3>
-                      <span className="text-[11px] bg-purple-500/10 text-purple-300 border border-purple-500/20 px-2.5 py-0.5 rounded-md font-medium">
-                        ✨ 94% Match
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-xs text-blue-400 font-medium">{job.company}</p>
-                      <span className="text-xs text-slate-500">•</span>
-                      <p className="text-xs text-slate-300">📍 {job.location || "Remote"}</p>
-                    </div>
-                    <p className="text-xs text-slate-400 line-clamp-2 mt-2">{job.description}</p>
-                  </div>
-
-                  <div className="space-y-3 pt-3 border-t border-slate-900">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-slate-400">Min CGPA: <strong className="text-slate-200">{job.min_cgpa}</strong></span>
-                    </div>
-
-                    {hasApplied ? (
-                      <div className="w-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-bold py-3 px-4 rounded-xl text-center uppercase tracking-wide">
-                        ✓ Application Submitted Successfully
-                      </div>
-                    ) : (
-                      <Link
-                        href={`/apply/${job.id}`}
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
-                      >
-                        View Details & Apply 🚀
-                      </Link>
-                    )}
-                  </div>
+            {jobs.map((job) => (
+              <div key={job.id} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-3 flex flex-col justify-between hover:border-slate-700 transition-all">
+                <div>
+                  <h3 className="font-bold text-white text-lg">{job.title}</h3>
+                  <p className="text-xs text-blue-400 font-medium">{job.company}</p>
+                  <p className="text-xs text-slate-400 mt-2 line-clamp-2">{job.description}</p>
                 </div>
-              );
-            })}
+                <div className="flex justify-between items-center pt-3 border-t border-slate-900 mt-2">
+                  <span className="text-xs text-slate-400">Min CGPA: <strong className="text-slate-200">{job.min_cgpa || 'None'}</strong> | Depts: <strong className="text-slate-200">{job.allowed_departments?.length ? job.allowed_departments.join(', ') : 'Any'}</strong></span>
+                  <button onClick={() => handleApply(job.id)} disabled={loading} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition-all">Quick Apply 🚀</button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
+
+      {/* Applications */}
+      <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-2xl backdrop-blur-xl">
+        <h2 className="text-xl font-bold mb-6 text-indigo-300">⚡ Application Status</h2>
+        {applications.length === 0 ? <p className="text-slate-400 text-sm italic">You have not applied to any campus openings yet.</p> : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {applications.map((app) => (
+              <div key={app.id} onClick={() => setSelectedApp(app)} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-4 hover:border-blue-500 cursor-pointer transition-all shadow-lg hover:shadow-blue-500/20">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-white text-lg">{app.jobs?.title || "Position Removed"}</h3>
+                    <p className="text-xs text-blue-400">{app.jobs?.company}</p>
+                  </div>
+                  <span className={`text-xs px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider ${
+                      app.status === 'hired' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                      app.status === 'shortlisted' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
+                      app.status === 'interview' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                      app.status === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                      'bg-slate-900 text-slate-400 border-slate-800'
+                  }`}>
+                    {app.status}
+                  </span>
+                </div>
+                
+                {app.interview_date && app.status !== 'hired' && (
+                  <div className="mt-4 pt-4 border-t border-slate-800">
+                    <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Interview Scheduled</p>
+                    <p className="text-sm font-semibold text-amber-400 mt-1">
+                      {new Date(app.interview_date).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </p>
+                  </div>
+                )}
+                
+                {app.offered_package && (
+                  <div className="mt-4 pt-4 border-t border-slate-800">
+                    <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Offer Details</p>
+                    <p className="text-sm font-semibold text-emerald-400 mt-1">Package: {app.offered_package}</p>
+                    {app.joining_date && <p className="text-xs text-slate-400 mt-1">Joining: {new Date(app.joining_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Application Details Modal */}
+      {selectedApp && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <button onClick={() => setSelectedApp(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">&times;</button>
+            <div className="p-8 space-y-6">
+              <div className="border-b border-slate-800 pb-4">
+                <h2 className="text-3xl font-black text-white">{selectedApp.jobs?.title}</h2>
+                <p className="text-blue-400 font-bold text-lg">{selectedApp.jobs?.company}</p>
+                <div className="flex gap-2 mt-3">
+                  <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">CGPA: {selectedApp.jobs?.min_cgpa}+</span>
+                  {selectedApp.jobs?.location && <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">📍 {selectedApp.jobs?.location}</span>}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-2">Job Description</h3>
+                <p className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{selectedApp.jobs?.description}</p>
+              </div>
+
+              {selectedApp.jobs?.allowed_departments && selectedApp.jobs.allowed_departments.length > 0 && (
+                <div>
+                  <h3 className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-2">Eligible Branches</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedApp.jobs.allowed_departments.map((d: string) => (
+                      <span key={d} className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-1 rounded text-xs">{d}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedApp.status === 'hired' && (
+                <div className="bg-emerald-950/30 border border-emerald-900 rounded-xl p-5 mt-4">
+                  <h3 className="text-emerald-400 font-bold mb-2">🎉 Congratulations on your Offer!</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div><span className="block text-slate-500 text-xs">Package</span><span className="text-white font-bold">{selectedApp.offered_package || 'N/A'}</span></div>
+                    <div><span className="block text-slate-500 text-xs">Joining Date</span><span className="text-white font-bold">{selectedApp.joining_date ? new Date(selectedApp.joining_date).toLocaleDateString('en-GB') : 'N/A'}</span></div>
+                    <div><span className="block text-slate-500 text-xs">Reporting Place</span><span className="text-white font-bold">{selectedApp.reporting_place || 'N/A'}</span></div>
+                    <div><span className="block text-slate-500 text-xs">Reporting Time</span><span className="text-white font-bold">{selectedApp.reporting_time || 'N/A'}</span></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

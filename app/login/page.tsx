@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("student");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
@@ -17,24 +18,52 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Register a new user
-        const { error } = await supabase.auth.signUp({
+        // Register a new user with metadata
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: { role },
+          },
         });
         if (error) throw error;
+        
+        // Ensure the profile row exists immediately with the correct role
+        if (data?.user) {
+          await supabase.from("profiles").upsert({
+            id: data.user.id,
+            email: data.user.email,
+            role: role
+          });
+        }
+        
         alert("Registration successful! You can now log in.");
         setIsSignUp(false);
       } else {
         // Log in existing user
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         
-        // Redirect to the landing page to choose a portal
-        router.push("/");
+        // Fetch user role
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", authData.user.id)
+          .single();
+
+        const userRole = profile?.role?.toLowerCase() || authData.user.user_metadata?.role?.toLowerCase() || "student";
+        
+        // Redirect to the respective portal based on role
+        if (userRole === "admin") {
+          router.push("/admin");
+        } else if (userRole === "recruiter") {
+          router.push("/recruiter");
+        } else {
+          router.push("/dashboard"); // student dashboard
+        }
       }
     } catch (error: any) {
       alert("Authentication Error: " + error.message);
@@ -58,6 +87,23 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-5">
+          {isSignUp && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                I am a...
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
+              >
+                <option value="student">Student Applicant</option>
+                <option value="recruiter">Company Recruiter</option>
+                <option value="admin">Placement Cell Admin</option>
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
               Email Address
@@ -91,13 +137,16 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
           >
-            {loading ? "Processing..." : isSignUp ? "Sign Up 🚀" : "Secure Login 🔒"}
+            {loading ? "Processing..." : isSignUp ? "Create Account 🚀" : "Secure Login 🔒"}
           </button>
         </form>
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setRole("student"); // Reset role when toggling
+            }}
             className="text-sm text-slate-400 hover:text-white transition-colors"
           >
             {isSignUp 
