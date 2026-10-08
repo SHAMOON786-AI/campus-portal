@@ -213,7 +213,7 @@ export default function StudentDashboard() {
                     <p className="text-[10px] text-slate-500 font-medium tracking-wide uppercase">
                       Applied: {new Date(app.applied_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </p>
-                    {app.interview_date && app.status !== 'hired' && app.status !== 'rejected' && (
+                    {app.interview_date && app.status !== 'rejected' && (
                       <p className="text-[11px] text-blue-400 font-bold tracking-wide mt-1">
                         📅 Interview: {new Date(app.interview_date).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                       </p>
@@ -298,7 +298,7 @@ export default function StudentDashboard() {
               )}
 
               {/* Offer Details */}
-              {selectedApp.status === 'hired' && (
+              {selectedApp.offered_package && (
                 <div className="bg-emerald-900/20 border border-emerald-800 p-4 rounded-xl mt-4">
                   <h3 className="text-sm text-emerald-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">🎉 Offer Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -330,15 +330,10 @@ export default function StudentDashboard() {
                 </div>
               )}
 
-              {selectedApp.status === 'hired' && (
+              {selectedApp.offered_package && (
                 <div className="bg-emerald-950/30 border border-emerald-900 rounded-xl p-5 mt-4">
                   <h3 className="text-emerald-400 font-bold mb-2">🎉 Congratulations on your Offer!</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div><span className="block text-slate-500 text-xs">Package</span><span className="text-white font-bold">{selectedApp.offered_package || 'N/A'}</span></div>
-                    <div><span className="block text-slate-500 text-xs">Joining Date</span><span className="text-white font-bold">{selectedApp.joining_date ? new Date(selectedApp.joining_date).toLocaleDateString('en-GB') : 'N/A'}</span></div>
-                    <div><span className="block text-slate-500 text-xs">Reporting Place</span><span className="text-white font-bold">{selectedApp.reporting_place || 'N/A'}</span></div>
-                    <div><span className="block text-slate-500 text-xs">Reporting Time</span><span className="text-white font-bold">{selectedApp.reporting_time || 'N/A'}</span></div>
-                  </div>
+                  <p className="text-sm text-emerald-200/70">You have been selected for this role. Please check your email for the official offer letter and next steps.</p>
                 </div>
               )}
             </div>
