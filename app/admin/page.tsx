@@ -15,6 +15,8 @@ export default function AdminDashboard() {
   }, []);
 
   const fetchAllPlatformData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { window.location.href = '/login'; return; }
     const { data: jobData } = await supabase.from("jobs").select("*");
     if (jobData) setJobs(jobData);
 

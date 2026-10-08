@@ -19,6 +19,8 @@ export default function StudentDashboard() {
   }, []);
 
   const fetchStudentData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { window.location.href = '/login'; return; }
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 

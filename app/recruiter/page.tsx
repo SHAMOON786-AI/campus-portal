@@ -39,7 +39,7 @@ export default function RecruiterDashboard() {
 
   const fetchRecruiterData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { window.location.href = '/login'; return; }
 
     // Fetch Company Profile
     const { data: profile } = await supabase.from("company_profiles").select("*").eq("recruiter_id", user.id).single();
@@ -73,7 +73,7 @@ export default function RecruiterDashboard() {
   const handleUpdateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { window.location.href = '/login'; return; }
 
     const payload: any = {
       company_name: companyForm.company_name,
@@ -99,7 +99,7 @@ export default function RecruiterDashboard() {
     setIsSubmitting(true);
     
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { window.location.href = '/login'; return; }
 
     try {
       const { error } = await supabase.from("jobs").insert([{
