@@ -89,13 +89,16 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-8 max-w-6xl mx-auto space-y-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-xl">
         <div>
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
             Student Dashboard Pro
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage Profile, Track Applications, Apply for Drives.</p>
         </div>
+        <button onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')} className="border border-red-900/50 hover:bg-red-900/30 text-red-400 font-bold py-2 px-6 rounded-full transition-all text-sm flex items-center gap-2">
+          Sign Out 🚪
+        </button>
       </div>
 
       {/* Profile Section */}
