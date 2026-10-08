@@ -209,7 +209,10 @@ export default function StudentDashboard() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold text-white text-lg">{app.jobs?.title || "Position Removed"}</h3>
-                    <p className="text-xs text-blue-400">{app.jobs?.company}</p>
+                    <p className="text-xs text-blue-400 mb-1">{app.jobs?.company}</p>
+                    <p className="text-[10px] text-slate-500 font-medium tracking-wide uppercase">
+                      Applied: {new Date(app.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </p>
                   </div>
                   <span className={`text-xs px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider ${
                       app.status === 'hired' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
@@ -253,6 +256,7 @@ export default function StudentDashboard() {
               <div className="border-b border-slate-800 pb-4">
                 <h2 className="text-3xl font-black text-white">{selectedApp.jobs?.title}</h2>
                 <p className="text-blue-400 font-bold text-lg">{selectedApp.jobs?.company}</p>
+                <p className="text-xs text-slate-500 mt-1">Applied on {new Date(selectedApp.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
                 <div className="flex gap-2 mt-3">
                   <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">CGPA: {selectedApp.jobs?.min_cgpa}+</span>
                   {selectedApp.jobs?.location && <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">📍 {selectedApp.jobs?.location}</span>}

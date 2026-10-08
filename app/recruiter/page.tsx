@@ -346,6 +346,7 @@ export default function RecruiterDashboard() {
                       </button>
                       <p className="text-xs text-slate-400 font-medium mt-1">CGPA: {app.profiles?.cgpa} | Branch: {app.profiles?.branch}</p>
                       <p className="text-xs text-emerald-400 font-medium mt-1">Applied for: <span className="text-emerald-300">{app.jobs?.title}</span></p>
+                      <p className="text-[10px] text-slate-500 font-medium tracking-wide mt-1 uppercase">Applied: {new Date(app.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
                     </div>
                   </div>
                   
