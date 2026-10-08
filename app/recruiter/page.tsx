@@ -35,6 +35,7 @@ export default function RecruiterDashboard() {
   
   // Applicant Details Modal State
   const [selectedApplicantDetails, setSelectedApplicantDetails] = useState<any>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRecruiterData();
@@ -470,7 +471,12 @@ export default function RecruiterDashboard() {
             <div className="p-8 space-y-6">
               <div className="flex items-start gap-6 border-b border-slate-800 pb-6">
                 {selectedApplicantDetails.profiles?.profile_picture_url ? (
-                  <img src={selectedApplicantDetails.profiles.profile_picture_url} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-slate-800" />
+                  <img 
+                    src={selectedApplicantDetails.profiles.profile_picture_url} 
+                    alt="Profile" 
+                    className="w-24 h-24 rounded-full object-cover border-4 border-slate-800 cursor-pointer hover:opacity-80 transition-opacity" 
+                    onClick={() => setFullScreenImage(selectedApplicantDetails.profiles.profile_picture_url)}
+                  />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-3xl font-bold text-slate-500 border-4 border-slate-700">
                     {selectedApplicantDetails.profiles?.name?.charAt(0) || "U"}
@@ -506,6 +512,19 @@ export default function RecruiterDashboard() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Full Screen Image Modal */}
+      {fullScreenImage && (
+        <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4" onClick={() => setFullScreenImage(null)}>
+          <button className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-12 h-12 flex items-center justify-center font-bold text-2xl transition-all">&times;</button>
+          <img 
+            src={fullScreenImage} 
+            alt="Full Screen Profile" 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl border border-white/10" 
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
