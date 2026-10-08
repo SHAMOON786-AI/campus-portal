@@ -193,7 +193,14 @@ export default function RecruiterDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8 max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
+      {/* Dynamic Background Glow */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-emerald-900/20 blur-[120px]"></div>
+        <div className="absolute top-[40%] -right-[20%] w-[60vw] h-[60vw] rounded-full bg-cyan-900/10 blur-[120px]"></div>
+      </div>
+      
+      <div className="p-8 max-w-6xl mx-auto space-y-8 relative z-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -422,6 +429,7 @@ export default function RecruiterDashboard() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

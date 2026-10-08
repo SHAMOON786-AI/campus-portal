@@ -88,7 +88,14 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8 max-w-6xl mx-auto space-y-10">
+    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
+      {/* Dynamic Background Glow */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-blue-900/20 blur-[120px]"></div>
+        <div className="absolute top-[40%] -right-[20%] w-[60vw] h-[60vw] rounded-full bg-indigo-900/10 blur-[120px]"></div>
+      </div>
+      
+      <div className="p-8 max-w-6xl mx-auto space-y-10 relative z-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-xl">
         <div>
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
@@ -242,6 +249,7 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
