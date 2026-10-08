@@ -3,6 +3,7 @@
 A full-stack, end-to-end enterprise platform designed to manage university recruitment drives, candidate application pipelines, real-time status timelines, and interview scheduling. Built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Supabase**.
 
 ---
+The link for the website is :  https://campus-portal-omega.vercel.app 
 
 ## ✨ Key Features
 
