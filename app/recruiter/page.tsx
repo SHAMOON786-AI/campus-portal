@@ -160,7 +160,7 @@ export default function RecruiterDashboard() {
     if (!interviewDates[id]) return alert("Please select a date and time.");
     try {
       const { error } = await supabase.from("applications").update({ 
-        interview_date: interviewDates[id],
+        interview_date: new Date(interviewDates[id]).toISOString(),
         status: "interview" 
       }).eq("id", id);
       if (error) throw error;
