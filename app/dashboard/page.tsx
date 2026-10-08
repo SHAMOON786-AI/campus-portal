@@ -213,6 +213,11 @@ export default function StudentDashboard() {
                     <p className="text-[10px] text-slate-500 font-medium tracking-wide uppercase">
                       Applied: {new Date(app.applied_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </p>
+                    {app.interview_date && app.status !== 'hired' && app.status !== 'rejected' && (
+                      <p className="text-[11px] text-blue-400 font-bold tracking-wide mt-1">
+                        📅 Interview: {new Date(app.interview_date).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </p>
+                    )}
                   </div>
                   <span className={`text-xs px-3 py-1.5 rounded-lg border uppercase font-bold tracking-wider ${
                       app.status === 'hired' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
@@ -275,6 +280,52 @@ export default function StudentDashboard() {
                     {selectedApp.jobs.allowed_departments.map((d: string) => (
                       <span key={d} className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-1 rounded text-xs">{d}</span>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Interview Details */}
+              {selectedApp.interview_date && (
+                <div className="bg-blue-900/20 border border-blue-800 p-4 rounded-xl">
+                  <h3 className="text-sm text-blue-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">📅 Interview Scheduled</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase">Date & Time</p>
+                      <p className="text-white font-medium">{new Date(selectedApp.interview_date).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Offer Details */}
+              {selectedApp.status === 'hired' && (
+                <div className="bg-emerald-900/20 border border-emerald-800 p-4 rounded-xl mt-4">
+                  <h3 className="text-sm text-emerald-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">🎉 Offer Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedApp.offered_package && (
+                      <div>
+                        <p className="text-xs text-slate-400 uppercase">Package</p>
+                        <p className="text-white font-bold text-lg">{selectedApp.offered_package}</p>
+                      </div>
+                    )}
+                    {selectedApp.joining_date && (
+                      <div>
+                        <p className="text-xs text-slate-400 uppercase">Joining Date</p>
+                        <p className="text-white font-medium">{new Date(selectedApp.joining_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                      </div>
+                    )}
+                    {selectedApp.reporting_place && (
+                      <div>
+                        <p className="text-xs text-slate-400 uppercase">Reporting Location</p>
+                        <p className="text-white font-medium">{selectedApp.reporting_place}</p>
+                      </div>
+                    )}
+                    {selectedApp.reporting_time && (
+                      <div>
+                        <p className="text-xs text-slate-400 uppercase">Reporting Time</p>
+                        <p className="text-white font-medium">{selectedApp.reporting_time}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
