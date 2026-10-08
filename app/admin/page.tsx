@@ -68,11 +68,11 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
+    <div className="min-h-screen text-white relative overflow-hidden bg-slate-950">`n      {/* Background Image */}`n      <div className="absolute inset-0 z-0 opacity-[0.15] bg-cover bg-center bg-no-repeat bg-fixed" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop')" }} />
       {/* Dynamic Background Glow */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-purple-900/20 blur-[120px]"></div>
-        <div className="absolute top-[40%] -right-[20%] w-[60vw] h-[60vw] rounded-full bg-rose-900/10 blur-[120px]"></div>
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none mix-blend-screen">
+        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-purple-600/20 blur-[120px]"></div>
+        <div className="absolute top-[40%] -right-[20%] w-[60vw] h-[60vw] rounded-full bg-rose-600/10 blur-[120px]"></div>
       </div>
       
       <div className="p-8 max-w-6xl mx-auto space-y-10 relative z-10">
