@@ -136,6 +136,18 @@ export default function RecruiterDashboard() {
     }
   };
 
+  const removeStudent = async (id: string) => {
+    if (!window.confirm("Are you sure you want to remove this candidate's application?")) return;
+    try {
+      const { error } = await supabase.from("applications").delete().eq("id", id);
+      if (error) throw error;
+      alert("Student application removed successfully.");
+      fetchRecruiterData();
+    } catch (err: any) {
+      alert("Error removing student: " + err.message);
+    }
+  };
+
   const toggleSelectApplicant = (id: string) => {
     const newSet = new Set(selectedApplicants);
     if (newSet.has(id)) newSet.delete(id);
@@ -299,8 +311,8 @@ export default function RecruiterDashboard() {
           {selectedApplicants.size > 0 && (
             <div className="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-700">
               <span className="text-xs text-slate-300 font-bold px-2">{selectedApplicants.size} Selected</span>
-              <button onClick={() => handleBatchStatusUpdate('Shortlisted')} className="bg-purple-600 hover:bg-purple-500 text-xs px-3 py-1.5 rounded-lg font-bold">Shortlist</button>
-              <button onClick={() => handleBatchStatusUpdate('Rejected')} className="bg-red-600 hover:bg-red-500 text-xs px-3 py-1.5 rounded-lg font-bold">Reject</button>
+              <button onClick={() => handleBatchStatusUpdate('shortlisted')} className="bg-purple-600 hover:bg-purple-500 text-xs px-3 py-1.5 rounded-lg font-bold">Shortlist</button>
+              <button onClick={() => handleBatchStatusUpdate('rejected')} className="bg-red-600 hover:bg-red-500 text-xs px-3 py-1.5 rounded-lg font-bold">Reject</button>
             </div>
           )}
         </div>
@@ -323,17 +335,25 @@ export default function RecruiterDashboard() {
                     </div>
                   </div>
                   
-                  <select 
-                    value={app.status} 
-                    onChange={(e) => updateStatus(app.id, e.target.value)}
-                    className="bg-slate-900 border border-slate-700 text-white text-sm rounded-lg p-2 focus:border-blue-500 outline-none"
-                  >
-                    <option value="applied">Applied (New)</option>
-                    <option value="shortlisted">Shortlisted</option>
-                    <option value="interview">Interview Scheduled</option>
-                    <option value="hired">Hired / Offer Extended</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select 
+                      value={app.status} 
+                      onChange={(e) => updateStatus(app.id, e.target.value)}
+                      className="bg-slate-900 border border-slate-700 text-white text-sm rounded-lg p-2 focus:border-blue-500 outline-none"
+                    >
+                      <option value="applied">Applied (New)</option>
+                      <option value="shortlisted">Shortlisted</option>
+                      <option value="interview">Interview Scheduled</option>
+                      <option value="hired">Hired / Offer Extended</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                    <button 
+                      onClick={() => removeStudent(app.id)}
+                      className="bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/50 text-xs font-bold px-3 py-2 rounded-lg transition-all"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
 
                 {/* Secure Document Links */}
