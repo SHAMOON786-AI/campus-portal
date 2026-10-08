@@ -12,7 +12,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(false); const [selectedApp, setSelectedApp] = useState<any>(null);
   const [studentProfile, setStudentProfile] = useState<any>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", branch: "", cgpa: "", graduation_year: "", resume_url: "" });
+  const [profileForm, setProfileForm] = useState({ name: "", branch: "", cgpa: "", graduation_year: "", resume_url: "", profile_picture_url: "" });
 
   useEffect(() => {
     fetchStudentData();
@@ -53,6 +53,7 @@ export default function StudentDashboard() {
       cgpa: parseFloat(profileForm.cgpa),
       graduation_year: parseInt(profileForm.graduation_year),
       resume_url: profileForm.resume_url,
+      profile_picture_url: profileForm.profile_picture_url,
     };
 
     const { error } = await supabase.from("profiles").upsert(payload);
@@ -127,6 +128,29 @@ export default function StudentDashboard() {
 
         {isEditingProfile ? (
           <form onSubmit={handleUpdateProfile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2 flex items-center gap-4">
+              {profileForm.profile_picture_url ? (
+                <img src={profileForm.profile_picture_url} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-slate-700" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-xl font-bold text-slate-500 border-2 border-slate-700">?</div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Profile Picture</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setProfileForm({...profileForm, profile_picture_url: reader.result as string});
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="bg-slate-950 border border-slate-700 rounded-lg p-1.5 text-sm w-full file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30" 
+                />
+              </div>
+            </div>
             <input type="text" placeholder="Full Name" required value={profileForm.name || ""} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm" />
             <input type="text" placeholder="Branch / Department (e.g. CSE)" required value={profileForm.branch || ""} onChange={e => setProfileForm({...profileForm, branch: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm" />
             <input type="number" step="0.01" placeholder="CGPA" required value={profileForm.cgpa || ""} onChange={e => setProfileForm({...profileForm, cgpa: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm" />
@@ -135,11 +159,20 @@ export default function StudentDashboard() {
             <button type="submit" disabled={loading} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl md:col-span-2 shadow-md">Save Profile</button>
           </form>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-slate-300">
-            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Full Name</span><strong className="text-white text-base">{studentProfile?.name || "N/A"}</strong></div>
-            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Branch</span><strong className="text-white text-base">{studentProfile?.branch || "N/A"}</strong></div>
-            <div><span className="block text-slate-500 text-xs uppercase font-semibold">CGPA</span><strong className="text-white text-base">{studentProfile?.cgpa || "N/A"}</strong></div>
-            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Graduation Year</span><strong className="text-white text-base">{studentProfile?.graduation_year || "N/A"}</strong></div>
+          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start text-sm text-slate-300">
+            {studentProfile?.profile_picture_url ? (
+              <img src={studentProfile.profile_picture_url} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-slate-800 shadow-xl" />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-3xl font-bold text-slate-500 border-4 border-slate-800 shadow-xl">
+                {studentProfile?.name?.charAt(0) || "U"}
+              </div>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
+              <div><span className="block text-slate-500 text-xs uppercase font-semibold">Full Name</span><strong className="text-white text-base">{studentProfile?.name || "N/A"}</strong></div>
+              <div><span className="block text-slate-500 text-xs uppercase font-semibold">Branch</span><strong className="text-white text-base">{studentProfile?.branch || "N/A"}</strong></div>
+              <div><span className="block text-slate-500 text-xs uppercase font-semibold">CGPA</span><strong className="text-white text-base">{studentProfile?.cgpa || "N/A"}</strong></div>
+              <div><span className="block text-slate-500 text-xs uppercase font-semibold">Graduation Year</span><strong className="text-white text-base">{studentProfile?.graduation_year || "N/A"}</strong></div>
+            </div>
           </div>
         )}
       </div>

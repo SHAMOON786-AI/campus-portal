@@ -32,6 +32,9 @@ export default function RecruiterDashboard() {
   // Offer Management State
   const [offerDetails, setOfferDetails] = useState<{ [key: string]: any }>({});
   const [interviewDates, setInterviewDates] = useState<{ [key: string]: string }>({});
+  
+  // Applicant Details Modal State
+  const [selectedApplicantDetails, setSelectedApplicantDetails] = useState<any>(null);
 
   useEffect(() => {
     fetchRecruiterData();
@@ -329,8 +332,10 @@ export default function RecruiterDashboard() {
                   <div className="flex items-start gap-3">
                     <input type="checkbox" checked={selectedApplicants.has(app.id)} onChange={() => toggleSelectApplicant(app.id)} className="mt-1.5 w-4 h-4 rounded border-slate-700 bg-slate-900 accent-blue-600" />
                     <div>
-                      <h3 className="font-bold text-white text-lg">{app.profiles?.name || `Applicant ${app.student_id.substring(0, 8)}`}</h3>
-                      <p className="text-xs text-slate-400 font-medium">CGPA: {app.profiles?.cgpa} | Branch: {app.profiles?.branch}</p>
+                      <button onClick={() => setSelectedApplicantDetails(app)} className="font-bold text-white text-lg hover:text-blue-400 text-left transition-colors">
+                        {app.profiles?.name || `Applicant ${app.student_id.substring(0, 8)}`}
+                      </button>
+                      <p className="text-xs text-slate-400 font-medium mt-1">CGPA: {app.profiles?.cgpa} | Branch: {app.profiles?.branch}</p>
                       <p className="text-xs text-emerald-400 font-medium mt-1">Applied for: {app.jobs?.title}</p>
                     </div>
                   </div>
@@ -449,6 +454,52 @@ export default function RecruiterDashboard() {
           </div>
         )}
       </div>
+      {/* Applicant Details Modal */}
+      {selectedApplicantDetails && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <button onClick={() => setSelectedApplicantDetails(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">&times;</button>
+            <div className="p-8 space-y-6">
+              <div className="flex items-start gap-6 border-b border-slate-800 pb-6">
+                {selectedApplicantDetails.profiles?.profile_picture_url ? (
+                  <img src={selectedApplicantDetails.profiles.profile_picture_url} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-slate-800" />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-3xl font-bold text-slate-500 border-4 border-slate-700">
+                    {selectedApplicantDetails.profiles?.name?.charAt(0) || "U"}
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-3xl font-black text-white">{selectedApplicantDetails.profiles?.name || "Unknown Candidate"}</h2>
+                  <p className="text-blue-400 font-bold text-lg">{selectedApplicantDetails.profiles?.email || selectedApplicantDetails.student_id}</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">CGPA: {selectedApplicantDetails.profiles?.cgpa || "N/A"}</span>
+                    <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">Branch: {selectedApplicantDetails.profiles?.branch || "N/A"}</span>
+                    <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">Grad Year: {selectedApplicantDetails.profiles?.graduation_year || "N/A"}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-2">Application Info</h3>
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                  <p className="text-sm text-slate-300 mb-2"><strong className="text-white">Applied for:</strong> {selectedApplicantDetails.jobs?.title}</p>
+                  <p className="text-sm text-slate-300 mb-2"><strong className="text-white">Status:</strong> <span className="uppercase text-xs font-bold bg-slate-800 px-2 py-1 rounded">{selectedApplicantDetails.status}</span></p>
+                  <p className="text-sm text-slate-300"><strong className="text-white">Applied on:</strong> {new Date(selectedApplicantDetails.created_at).toLocaleString('en-GB')}</p>
+                </div>
+              </div>
+
+              {selectedApplicantDetails.profiles?.resume_url && (
+                <div>
+                  <h3 className="text-sm text-slate-500 font-bold uppercase tracking-wider mb-2">Resume</h3>
+                  <a href={selectedApplicantDetails.profiles.resume_url} target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600/20 hover:bg-blue-600 border border-blue-500 text-blue-400 hover:text-white px-6 py-3 rounded-xl transition-all font-bold text-sm">
+                    📄 View Candidate Resume
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   );

@@ -9,6 +9,11 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  
+  // Admin Profile State
+  const [adminProfile, setAdminProfile] = useState<any>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", profile_picture_url: "" });
 
   useEffect(() => {
     fetchAllPlatformData();
@@ -25,6 +30,36 @@ export default function AdminDashboard() {
 
     const { data: logData } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(50);
     if (logData) setAuditLogs(logData);
+
+    // Fetch Admin Profile
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    if (profile) {
+      setAdminProfile(profile);
+      setProfileForm({ name: profile.name || "", profile_picture_url: profile.profile_picture_url || "" });
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const payload = {
+      id: user.id,
+      role: adminProfile?.role || "admin",
+      email: user.email,
+      name: profileForm.name,
+      profile_picture_url: profileForm.profile_picture_url,
+    };
+
+    const { error } = await supabase.from("profiles").upsert(payload);
+    if (error) {
+      alert("Error updating profile: " + error.message);
+    } else {
+      alert("Profile updated successfully!");
+      setIsEditingProfile(false);
+      fetchAllPlatformData();
+    }
   };
 
   const handleJobStatus = async (jobId: string, status: string) => {
@@ -77,16 +112,58 @@ export default function AdminDashboard() {
       
       <div className="p-8 max-w-6xl mx-auto space-y-10 relative z-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-xl">
-        <div>
-          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 bg-clip-text text-transparent">
-            Admin Governance Portal
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">Platform moderation, institutional compliance, and drive approvals.</p>
+        <div className="flex items-center gap-4">
+          {adminProfile?.profile_picture_url ? (
+            <img src={adminProfile.profile_picture_url} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-slate-700 shadow-lg" />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-xl font-bold text-slate-500 border-2 border-slate-700 shadow-lg">
+              {adminProfile?.name?.charAt(0) || "A"}
+            </div>
+          )}
+          <div>
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 bg-clip-text text-transparent">
+              Admin Governance Portal
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">Platform moderation, institutional compliance, and drive approvals.</p>
+          </div>
         </div>
-        <button onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')} className="border border-red-900/50 hover:bg-red-900/30 text-red-400 font-bold py-2 px-6 rounded-full transition-all text-sm flex items-center gap-2">
-          Sign Out 🚪
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setIsEditingProfile(!isEditingProfile)} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-full transition-all text-sm border border-slate-700">
+            {isEditingProfile ? "Cancel Edit" : "Edit Profile"}
+          </button>
+          <button onClick={() => supabase.auth.signOut().then(() => window.location.href='/login')} className="border border-red-900/50 hover:bg-red-900/30 text-red-400 font-bold py-2 px-6 rounded-full transition-all text-sm flex items-center gap-2">
+            Sign Out 🚪
+          </button>
+        </div>
       </div>
+
+      {isEditingProfile && (
+        <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-2xl shadow-2xl backdrop-blur-xl">
+          <form onSubmit={handleUpdateProfile} className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Full Name</label>
+              <input type="text" placeholder="Admin Name" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm w-full" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Profile Picture</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setProfileForm({...profileForm, profile_picture_url: reader.result as string});
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="bg-slate-950 border border-slate-700 rounded-lg p-1.5 text-sm w-full file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-600/20 file:text-purple-400 hover:file:bg-purple-600/30" 
+              />
+            </div>
+            <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-6 rounded-xl shadow-md h-[42px]">Save</button>
+          </form>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         
