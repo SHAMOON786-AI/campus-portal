@@ -40,3 +40,6 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   details JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+
+-- 5. Add Profile Picture URL Column
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS profile_picture_url TEXT;
