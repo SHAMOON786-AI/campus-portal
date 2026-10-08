@@ -346,7 +346,7 @@ export default function RecruiterDashboard() {
                       </button>
                       <p className="text-xs text-slate-400 font-medium mt-1">CGPA: {app.profiles?.cgpa} | Branch: {app.profiles?.branch}</p>
                       <p className="text-xs text-emerald-400 font-medium mt-1">Applied for: <span className="text-emerald-300">{app.jobs?.title}</span></p>
-                      <p className="text-[10px] text-slate-500 font-medium tracking-wide mt-1 uppercase">Applied: {new Date(app.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                      <p className="text-[10px] text-slate-500 font-medium tracking-wide mt-1 uppercase">Applied: {new Date(app.applied_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
                     </div>
                   </div>
                   
@@ -499,7 +499,7 @@ export default function RecruiterDashboard() {
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
                   <p className="text-sm text-slate-300 mb-2"><strong className="text-white">Applied for:</strong> {selectedApplicantDetails.jobs?.title}</p>
                   <p className="text-sm text-slate-300 mb-2"><strong className="text-white">Status:</strong> <span className="uppercase text-xs font-bold bg-slate-800 px-2 py-1 rounded">{selectedApplicantDetails.status}</span></p>
-                  <p className="text-sm text-slate-300"><strong className="text-white">Applied on:</strong> {new Date(selectedApplicantDetails.created_at).toLocaleString('en-GB')}</p>
+                  <p className="text-sm text-slate-300"><strong className="text-white">Applied on:</strong> {new Date(selectedApplicantDetails.applied_at).toLocaleString('en-GB')}</p>
                 </div>
               </div>
 
