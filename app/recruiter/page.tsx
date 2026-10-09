@@ -412,11 +412,16 @@ export default function RecruiterDashboard() {
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
                     <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">Schedule Interview</label>
                     <div className="flex gap-2">
-                      <input 
-                        type="datetime-local" 
-                        onChange={(e) => setInterviewDates({...interviewDates, [app.id]: e.target.value})}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-blue-500 outline-none" 
-                      />
+                      <div className="relative w-full">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-sm opacity-70">
+                          📅 <span className="ml-1">⏰</span>
+                        </div>
+                        <input 
+                          type="datetime-local" 
+                          onChange={(e) => setInterviewDates({...interviewDates, [app.id]: e.target.value})}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 pl-14 text-sm text-white focus:border-blue-500 outline-none appearance-none" 
+                        />
+                      </div>
                       <button onClick={() => scheduleInterview(app.id)} className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 rounded-lg transition-all">
                         Set
                       </button>
