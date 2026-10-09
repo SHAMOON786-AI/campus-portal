@@ -9,6 +9,9 @@ export default function AdminDashboard() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [jobApplications, setJobApplications] = useState<any[]>([]);
+  const [loadingApplications, setLoadingApplications] = useState(false);
   
   // Admin Profile State
   const [adminProfile, setAdminProfile] = useState<any>(null);
@@ -99,6 +102,24 @@ export default function AdminDashboard() {
       fetchAllPlatformData();
     } catch (err: any) {
       alert("Error deleting job: " + err.message);
+    }
+  };
+
+  const handleViewJob = async (job: any) => {
+    setSelectedJob(job);
+    setLoadingApplications(true);
+    setJobApplications([]);
+    try {
+      const { data: apps, error } = await supabase
+        .from("applications")
+        .select("*, profiles(*)")
+        .eq("job_id", job.id);
+      if (error) throw error;
+      if (apps) setJobApplications(apps);
+    } catch (err: any) {
+      console.error("Error fetching applications:", err.message);
+    } finally {
+      setLoadingApplications(false);
     }
   };
 
@@ -207,6 +228,7 @@ export default function AdminDashboard() {
                   <div className="flex gap-2 pt-2 border-t border-slate-900">
                     <button onClick={() => handleJobStatus(job.id, 'approved')} disabled={loadingAction === job.id || job.status === 'approved'} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl disabled:opacity-50">Approve</button>
                     <button onClick={() => handleJobStatus(job.id, 'rejected')} disabled={loadingAction === job.id || job.status === 'rejected'} className="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl disabled:opacity-50">Reject</button>
+                    <button onClick={() => handleViewJob(job)} className="bg-blue-600/40 hover:bg-blue-600 text-blue-300 border border-blue-800 text-xs font-bold px-3 py-2 rounded-xl">View Details</button>
                     <button onClick={() => handleDeleteJob(job.id)} className="bg-rose-900/40 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-bold px-3 py-2 rounded-xl ml-auto">Delete</button>
                   </div>
                 </div>
@@ -246,6 +268,84 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Job Details Modal */}
+      {selectedJob && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <button onClick={() => setSelectedJob(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center font-bold z-10">&times;</button>
+            <div className="p-8 space-y-8">
+              {/* Job Info */}
+              <div>
+                <h2 className="text-3xl font-black text-white">{selectedJob.title}</h2>
+                <h3 className="text-xl text-blue-400 font-bold mb-4">{selectedJob.company}</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                  <div><span className="block text-xs text-slate-500 uppercase font-bold">Location</span><span className="text-sm text-slate-300">{selectedJob.location || "Not specified"}</span></div>
+                  <div><span className="block text-xs text-slate-500 uppercase font-bold">Min CGPA</span><span className="text-sm text-slate-300">{selectedJob.min_cgpa}</span></div>
+                  <div><span className="block text-xs text-slate-500 uppercase font-bold">Departments</span><span className="text-sm text-slate-300">{selectedJob.allowed_departments?.join(', ') || 'All Departments'}</span></div>
+                  <div><span className="block text-xs text-slate-500 uppercase font-bold">Status</span><span className="text-sm font-bold uppercase text-emerald-400">{selectedJob.status}</span></div>
+                </div>
+                
+                <div className="mt-4">
+                  <span className="block text-xs text-slate-500 uppercase font-bold mb-2">Job Description</span>
+                  <p className="text-sm text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800 whitespace-pre-wrap">{selectedJob.description}</p>
+                </div>
+              </div>
+
+              {/* Applications & Candidate Offers */}
+              <div>
+                <h3 className="text-xl font-bold text-emerald-300 mb-4 border-b border-slate-800 pb-2">Candidate Pipeline & Offers</h3>
+                {loadingApplications ? (
+                  <p className="text-slate-400 italic text-sm">Loading applications...</p>
+                ) : jobApplications.length === 0 ? (
+                  <p className="text-slate-400 italic text-sm">No applications for this drive yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {jobApplications.map((app: any) => (
+                      <div key={app.id} className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-400 border border-slate-700 shrink-0">
+                            {app.profiles?.name?.charAt(0) || "S"}
+                          </div>
+                          <div>
+                            <p className="font-bold text-white text-sm">{app.profiles?.name || "Student"}</p>
+                            <p className="text-xs text-slate-400">CGPA: {app.profiles?.cgpa} | Branch: {app.profiles?.branch}</p>
+                            <p className="text-xs font-bold mt-1 uppercase">
+                              Status: <span className={
+                                app.status === 'hired' ? 'text-emerald-400' :
+                                app.status === 'interview' ? 'text-blue-400' :
+                                app.status === 'rejected' ? 'text-rose-400' : 'text-amber-400'
+                              }>{app.status}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Interview / Offer Details for Admin */}
+                        {(app.status === 'interview' || app.status === 'hired' || app.interview_date || app.offered_package) && (
+                          <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 min-w-[250px] text-xs space-y-1">
+                            {app.interview_date && (
+                              <p className="text-slate-300"><strong className="text-blue-400">Interview:</strong> {new Date(app.interview_date).toLocaleString()}</p>
+                            )}
+                            {app.offered_package && (
+                              <div className="border-t border-slate-700/50 mt-1 pt-1">
+                                <p className="text-slate-300"><strong className="text-emerald-400">Offer Package:</strong> {app.offered_package}</p>
+                                {app.joining_date && <p className="text-slate-300"><strong className="text-slate-400">Joining:</strong> {app.joining_date}</p>}
+                                {app.reporting_place && <p className="text-slate-300"><strong className="text-slate-400">Location:</strong> {app.reporting_place}</p>}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
     </div>
   );

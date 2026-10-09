@@ -217,6 +217,33 @@ export default function RecruiterDashboard() {
       </div>
       
       <div className="p-8 max-w-6xl mx-auto space-y-8 relative z-10">
+        <datalist id="city-suggestions">
+          <option value="Bangalore, India" />
+          <option value="Hyderabad, India" />
+          <option value="Pune, India" />
+          <option value="Chennai, India" />
+          <option value="Noida, India" />
+          <option value="Gurugram, India" />
+          <option value="Mumbai, India" />
+          <option value="Kolkata, India" />
+          <option value="New Delhi, India" />
+          <option value="Trivandrum, India" />
+          <option value="Bhubaneswar, India" />
+          <option value="Chandigarh, India" />
+          <option value="Ahmedabad, India" />
+          <option value="Jaipur, India" />
+          <option value="Lucknow, India" />
+          <option value="San Francisco, USA" />
+          <option value="Seattle, USA" />
+          <option value="New York, USA" />
+          <option value="London, UK" />
+          <option value="Dubai, UAE" />
+          <option value="Singapore" />
+          <option value="Toronto, Canada" />
+          <option value="Sydney, Australia" />
+          <option value="Tokyo, Japan" />
+          <option value="Dublin, Ireland" />
+        </datalist>
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -284,7 +311,7 @@ export default function RecruiterDashboard() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Location</label>
-                <input type="text" required value={newJob.location} onChange={(e) => setNewJob({...newJob, location: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:border-emerald-500 outline-none" placeholder="e.g. Remote, Bangalore" />
+                <input type="text" list="city-suggestions" required value={newJob.location} onChange={(e) => setNewJob({...newJob, location: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:border-emerald-500 outline-none" placeholder="Search city... (e.g. Remote, Bangalore)" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Minimum CGPA Requirement</label>
@@ -425,33 +452,7 @@ export default function RecruiterDashboard() {
                         onChange={(e) => setOfferDetails({...offerDetails, [app.id]: {...offerDetails[app.id], reporting_place: e.target.value}})}
                         className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-emerald-500 outline-none" 
                       />
-                      <datalist id="city-suggestions">
-                        <option value="Bangalore, Karnataka" />
-                        <option value="Hyderabad, Telangana" />
-                        <option value="Pune, Maharashtra" />
-                        <option value="Chennai, Tamil Nadu" />
-                        <option value="Noida, Uttar Pradesh" />
-                        <option value="Gurugram, Haryana" />
-                        <option value="Mumbai, Maharashtra" />
-                        <option value="Kolkata, West Bengal" />
-                        <option value="Trivandrum, Kerala" />
-                        <option value="Bhubaneswar, Odisha" />
-                        <option value="New Delhi, Delhi" />
-                        <option value="Chandigarh, UT" />
-                        <option value="Ahmedabad, Gujarat" />
-                        <option value="Jaipur, Rajasthan" />
-                        <option value="Lucknow, Uttar Pradesh" />
-                        <option value="San Francisco, USA" />
-                        <option value="Seattle, USA" />
-                        <option value="New York, USA" />
-                        <option value="London, UK" />
-                        <option value="Dubai, UAE" />
-                        <option value="Singapore" />
-                        <option value="Toronto, Canada" />
-                        <option value="Sydney, Australia" />
-                        <option value="Tokyo, Japan" />
-                        <option value="Dublin, Ireland" />
-                      </datalist>
+
                       <button onClick={() => saveOfferDetails(app.id)} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 rounded-lg transition-all">
                         Hire
                       </button>
