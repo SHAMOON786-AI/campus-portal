@@ -10,6 +10,7 @@ export default function StudentDashboard() {
   const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false); const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [studentProfile, setStudentProfile] = useState<any>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", branch: "", cgpa: "", graduation_year: "", resume_url: "", profile_picture_url: "" });
@@ -161,7 +162,7 @@ export default function StudentDashboard() {
         ) : (
           <div className="flex flex-col md:flex-row gap-6 items-center md:items-start text-sm text-slate-300">
             {studentProfile?.profile_picture_url ? (
-              <img src={studentProfile.profile_picture_url} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-slate-800 shadow-xl" />
+              <img src={studentProfile.profile_picture_url} alt="Profile" className="w-24 h-24 rounded-full object-cover border-4 border-slate-800 shadow-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setFullScreenImage(studentProfile.profile_picture_url)} />
             ) : (
               <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-3xl font-bold text-slate-500 border-4 border-slate-800 shadow-xl">
                 {studentProfile?.name?.charAt(0) || "U"}
@@ -340,6 +341,20 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+
+      {/* Full Screen Image Modal */}
+      {fullScreenImage && (
+        <div className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4" onClick={() => setFullScreenImage(null)}>
+          <button className="absolute top-4 right-4 text-white/50 hover:text-white bg-white/10 rounded-full w-12 h-12 flex items-center justify-center font-bold text-2xl transition-all">&times;</button>
+          <img 
+            src={fullScreenImage} 
+            alt="Full Screen Profile" 
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl border border-white/10" 
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
     </div>
     </div>
   );

@@ -303,7 +303,7 @@ export default function RecruiterDashboard() {
         ) : (
           <div className="flex flex-col md:flex-row gap-6 items-start">
             {companyProfile?.logo_url ? (
-              <img src={companyProfile.logo_url} alt="Logo" className="w-24 h-24 object-contain rounded-xl border-4 border-slate-800 bg-slate-900 shadow-xl shrink-0" />
+              <img src={companyProfile.logo_url} alt="Logo" className="w-24 h-24 object-contain rounded-xl border-4 border-slate-800 bg-slate-900 shadow-xl shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setFullScreenImage(companyProfile.logo_url)} />
             ) : (
               <div className="w-24 h-24 rounded-xl bg-slate-800 flex items-center justify-center text-4xl font-bold text-slate-500 border-4 border-slate-700 shadow-xl shrink-0">
                 🏢
