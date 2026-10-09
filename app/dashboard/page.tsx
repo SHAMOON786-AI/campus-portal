@@ -9,6 +9,7 @@ import { submitApplication } from "../actions";
 export default function StudentDashboard() {
   const [applications, setApplications] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [companyLogos, setCompanyLogos] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false); const [selectedApp, setSelectedApp] = useState<any>(null);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [studentProfile, setStudentProfile] = useState<any>(null);
@@ -37,6 +38,16 @@ export default function StudentDashboard() {
     // Fetch Jobs
     const { data: jobData } = await supabase.from("jobs").select("*").eq("status", "approved");
     if (jobData) setJobs(jobData);
+
+    // Fetch Company Logos
+    const { data: companies } = await supabase.from("company_profiles").select("id, recruiter_id, logo_url");
+    if (companies) {
+      const logoMap: Record<string, string> = {};
+      companies.forEach((c: any) => {
+        if (c.logo_url) logoMap[c.recruiter_id || c.id] = c.logo_url;
+      });
+      setCompanyLogos(logoMap);
+    }
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -186,8 +197,17 @@ export default function StudentDashboard() {
             {jobs.map((job, index) => (
               <Tilt key={job.id} glareEnable={true} glareMaxOpacity={0.15} glareColor="#ffffff" glarePosition="all" scale={1.02} transitionSpeed={2000} tiltMaxAngleX={5} tiltMaxAngleY={5} className="h-full"><motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: index * 0.1 }} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-3 flex flex-col justify-between hover:border-slate-700 transition-all h-full shadow-xl">
                 <div>
-                  <h3 className="font-bold text-white text-lg">{job.title}</h3>
-                  <p className="text-xs text-blue-400 font-medium">{job.company}</p>
+                  <div className="flex items-start gap-3 mb-2">
+                    {companyLogos[job.recruiter_id] ? (
+                      <img src={companyLogos[job.recruiter_id]} alt="Logo" className="w-10 h-10 object-contain rounded border border-slate-700 bg-slate-900 shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setFullScreenImage(companyLogos[job.recruiter_id])} />
+                    ) : (
+                      <div className="w-10 h-10 rounded bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-500 border border-slate-700 shrink-0">🏢</div>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-white text-lg leading-tight">{job.title}</h3>
+                      <p className="text-xs text-blue-400 font-medium">{job.company}</p>
+                    </div>
+                  </div>
                   <p className="text-xs text-slate-400 mt-2 line-clamp-2">{job.description}</p>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-slate-900 mt-2">
@@ -260,10 +280,26 @@ export default function StudentDashboard() {
             <button onClick={() => setSelectedApp(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">&times;</button>
             <div className="p-8 space-y-6">
               <div className="border-b border-slate-800 pb-4">
-                <h2 className="text-3xl font-black text-white">{selectedApp.jobs?.title}</h2>
-                <p className="text-blue-400 font-bold text-lg">{selectedApp.jobs?.company}</p>
-                <p className="text-xs text-slate-500 mt-1">Applied on {new Date(selectedApp.applied_at).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
-                <div className="flex gap-2 mt-3">
+                <div className="flex items-start gap-4">
+                  {companyLogos[selectedApp.jobs?.recruiter_id] ? (
+                    <img 
+                      src={companyLogos[selectedApp.jobs?.recruiter_id]} 
+                      alt="Logo" 
+                      className="w-16 h-16 object-contain rounded border border-slate-700 bg-slate-900 shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                      onClick={() => setFullScreenImage(companyLogos[selectedApp.jobs?.recruiter_id])}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded bg-slate-800 flex items-center justify-center text-2xl font-bold text-slate-500 border border-slate-700 shrink-0">
+                      🏢
+                    </div>
+                  )}
+                  <div>
+                    <h2 className="text-3xl font-black text-white">{selectedApp.jobs?.title}</h2>
+                    <p className="text-blue-400 font-bold text-lg">{selectedApp.jobs?.company}</p>
+                    <p className="text-xs text-slate-500 mt-1">Applied on {new Date(selectedApp.applied_at).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
                   <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">CGPA: {selectedApp.jobs?.min_cgpa}+</span>
                   {selectedApp.jobs?.location && <span className="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">📍 {selectedApp.jobs?.location}</span>}
                 </div>
