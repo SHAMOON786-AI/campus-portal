@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Interview / Offer Details for Admin */}
-                        {(app.status === 'interview' || app.status === 'hired' || app.interview_date || app.offered_package) && (
+                        {app.status !== 'rejected' && (app.status === 'interview' || app.status === 'hired' || app.interview_date || app.offered_package) && (
                           <div className="bg-slate-900 p-3 rounded-lg border border-slate-700 min-w-[250px] text-xs space-y-1">
                             {app.interview_date && (
                               <p className="text-slate-300"><strong className="text-blue-400">Interview:</strong> {new Date(app.interview_date).toLocaleString()}</p>

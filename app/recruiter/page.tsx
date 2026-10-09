@@ -133,7 +133,15 @@ export default function RecruiterDashboard() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase.from("applications").update({ status }).eq("id", id);
+      const updateData: any = { status };
+      if (status === 'rejected') {
+        updateData.interview_date = null;
+        updateData.offered_package = null;
+        updateData.joining_date = null;
+        updateData.reporting_time = null;
+        updateData.reporting_place = null;
+      }
+      const { error } = await supabase.from("applications").update(updateData).eq("id", id);
       if (error) throw error;
       fetchRecruiterData();
     } catch (err: any) {
@@ -163,7 +171,15 @@ export default function RecruiterDashboard() {
   const handleBatchStatusUpdate = async (status: string) => {
     if (selectedApplicants.size === 0) return alert("Select at least one applicant.");
     try {
-      const { error } = await supabase.from("applications").update({ status }).in("id", Array.from(selectedApplicants));
+      const updateData: any = { status };
+      if (status === 'rejected') {
+        updateData.interview_date = null;
+        updateData.offered_package = null;
+        updateData.joining_date = null;
+        updateData.reporting_time = null;
+        updateData.reporting_place = null;
+      }
+      const { error } = await supabase.from("applications").update(updateData).in("id", Array.from(selectedApplicants));
       if (error) throw error;
       alert(`Successfully updated ${selectedApplicants.size} applicants to ${status}.`);
       setSelectedApplicants(new Set());

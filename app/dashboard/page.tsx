@@ -255,7 +255,7 @@ export default function StudentDashboard() {
                   </span>
                 </div>
                 
-                {app.interview_date && app.status !== 'hired' && (
+                {app.interview_date && app.status !== 'hired' && app.status !== 'rejected' && (
                   <div className="mt-4 pt-4 border-t border-slate-800">
                     <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Interview Scheduled</p>
                     <p className="text-sm font-semibold text-amber-400 mt-1">
@@ -264,11 +264,18 @@ export default function StudentDashboard() {
                   </div>
                 )}
                 
-                {app.offered_package && (
+                {app.offered_package && app.status !== 'rejected' && (
                   <div className="mt-4 pt-4 border-t border-slate-800">
                     <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Offer Details</p>
                     <p className="text-sm font-semibold text-emerald-400 mt-1">Package: {app.offered_package}</p>
                     {app.joining_date && <p className="text-xs text-slate-400 mt-1">Joining: {new Date(app.joining_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>}
+                  </div>
+                )}
+                
+                {app.status === 'rejected' && (
+                  <div className="mt-4 pt-4 border-t border-slate-800">
+                    <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Status Update</p>
+                    <p className="text-sm font-semibold text-rose-400">Keep going! Every rejection is a step closer to your dream job. ✨</p>
                   </div>
                 )}
               </motion.div></Tilt>
@@ -326,7 +333,7 @@ export default function StudentDashboard() {
               )}
 
               {/* Interview Details */}
-              {selectedApp.interview_date && (
+              {selectedApp.interview_date && selectedApp.status !== 'rejected' && selectedApp.status !== 'hired' && (
                 <div className="bg-blue-900/20 border border-blue-800 p-4 rounded-xl">
                   <h3 className="text-sm text-blue-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">📅 Interview Scheduled</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -339,7 +346,7 @@ export default function StudentDashboard() {
               )}
 
               {/* Offer Details */}
-              {selectedApp.offered_package && (
+              {selectedApp.offered_package && selectedApp.status !== 'rejected' && (
                 <div className="bg-emerald-900/20 border border-emerald-800 p-4 rounded-xl mt-4">
                   <h3 className="text-sm text-emerald-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">🎉 Offer Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -371,10 +378,17 @@ export default function StudentDashboard() {
                 </div>
               )}
 
-              {selectedApp.offered_package && (
+              {selectedApp.offered_package && selectedApp.status !== 'rejected' && (
                 <div className="bg-emerald-950/30 border border-emerald-900 rounded-xl p-5 mt-4">
                   <h3 className="text-emerald-400 font-bold mb-2">🎉 Congratulations on your Offer!</h3>
                   <p className="text-sm text-emerald-200/70">You have been selected for this role. Please check your email for the official offer letter and next steps.</p>
+                </div>
+              )}
+
+              {selectedApp.status === 'rejected' && (
+                <div className="bg-rose-950/30 border border-rose-900 rounded-xl p-5 mt-4">
+                  <h3 className="text-rose-400 font-bold mb-2">💪 Keep your head up!</h3>
+                  <p className="text-sm text-rose-200/70">Unfortunately, you weren't selected for this role. Don't be discouraged—use this experience to grow and prepare for the next opportunity. Your dream job is out there!</p>
                 </div>
               )}
             </div>
