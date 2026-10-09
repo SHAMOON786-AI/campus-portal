@@ -119,6 +119,10 @@ export default function StudentDashboard() {
       <div className="p-8 max-w-6xl mx-auto space-y-10 relative z-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800 backdrop-blur-xl">
         <div>
+          <div className="flex items-center gap-3 mb-1">
+            <img src="https://upload.wikimedia.org/wikipedia/en/thumb/c/c5/Vellore_Institute_of_Technology_seal_2017.svg/120px-Vellore_Institute_of_Technology_seal_2017.svg.png" alt="VIT Logo" className="h-10 bg-white p-1 rounded shadow-sm" />
+            <span className="text-white font-bold tracking-widest text-sm opacity-80 uppercase">VIT Vellore</span>
+          </div>
           <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
             Student Dashboard Pro
           </h1>
