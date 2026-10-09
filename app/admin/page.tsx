@@ -196,8 +196,20 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               {companies.map(comp => (
                 <div key={comp.id} className="bg-slate-950 border border-slate-800/80 p-5 rounded-xl space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex items-start gap-4">
+                    {comp.logo_url ? (
+                      <img 
+                        src={comp.logo_url} 
+                        alt="Logo" 
+                        className="w-12 h-12 object-contain rounded border border-slate-700 bg-slate-900 shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => setFullScreenImage(comp.logo_url)}
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded bg-slate-800 flex items-center justify-center text-xl font-bold text-slate-500 border border-slate-700 shrink-0">
+                        🏢
+                      </div>
+                    )}
+                    <div className="flex-1">
                       <h3 className="font-bold text-white text-lg">{comp.company_name}</h3>
                       <p className="text-xs text-slate-400 mt-1 line-clamp-3">{comp.description}</p>
                     </div>
