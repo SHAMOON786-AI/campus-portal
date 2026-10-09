@@ -12,7 +12,7 @@ export default function RecruiterDashboard() {
   // Company Profile
   const [companyProfile, setCompanyProfile] = useState<any>(null);
   const [isEditingCompany, setIsEditingCompany] = useState(false);
-  const [companyForm, setCompanyForm] = useState({ company_name: "", description: "" });
+  const [companyForm, setCompanyForm] = useState<any>({ company_name: "", description: "", logo_url: "" });
 
   // Job Posting State
   const [showJobForm, setShowJobForm] = useState(false);
@@ -82,6 +82,7 @@ export default function RecruiterDashboard() {
     const payload: any = {
       company_name: companyForm.company_name,
       description: companyForm.description,
+      logo_url: companyForm.logo_url,
       recruiter_id: user.id
     };
     if (companyProfile?.id) payload.id = companyProfile.id;
@@ -273,13 +274,45 @@ export default function RecruiterDashboard() {
         {isEditingCompany ? (
           <form onSubmit={handleUpdateCompany} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input type="text" placeholder="Company Name" required value={companyForm.company_name || ""} onChange={e => setCompanyForm({...companyForm, company_name: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm md:col-span-2" />
+            
+            <div className="md:col-span-2 flex flex-col md:flex-row gap-4 items-center">
+              {companyForm.logo_url && (
+                <img src={companyForm.logo_url} alt="Logo" className="w-16 h-16 object-contain rounded-lg border-2 border-slate-700 bg-slate-900 shrink-0" />
+              )}
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Company Logo (Optional)</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setCompanyForm({...companyForm, logo_url: reader.result as string});
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="bg-slate-950 border border-slate-700 rounded-lg p-1.5 text-sm w-full file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30" 
+                />
+              </div>
+            </div>
+
             <textarea placeholder="Company Description" required value={companyForm.description || ""} onChange={e => setCompanyForm({...companyForm, description: e.target.value})} className="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm md:col-span-2" rows={3}></textarea>
             <button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl md:col-span-2 shadow-md">Save Profile</button>
           </form>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300">
-            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Company Name</span><strong className="text-white text-base">{companyProfile?.company_name || "N/A"}</strong></div>
-            <div><span className="block text-slate-500 text-xs uppercase font-semibold">Description</span><span className="text-white text-sm line-clamp-3">{companyProfile?.description || "N/A"}</span></div>
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            {companyProfile?.logo_url ? (
+              <img src={companyProfile.logo_url} alt="Logo" className="w-24 h-24 object-contain rounded-xl border-4 border-slate-800 bg-slate-900 shadow-xl shrink-0" />
+            ) : (
+              <div className="w-24 h-24 rounded-xl bg-slate-800 flex items-center justify-center text-4xl font-bold text-slate-500 border-4 border-slate-700 shadow-xl shrink-0">
+                🏢
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300 w-full">
+              <div className="md:col-span-2"><span className="block text-slate-500 text-xs uppercase font-semibold">Company Name</span><strong className="text-white text-xl">{companyProfile?.company_name || "N/A"}</strong></div>
+              <div className="md:col-span-2"><span className="block text-slate-500 text-xs uppercase font-semibold">Description</span><span className="text-white text-sm line-clamp-3">{companyProfile?.description || "N/A"}</span></div>
+            </div>
           </div>
         )}
       </div>
