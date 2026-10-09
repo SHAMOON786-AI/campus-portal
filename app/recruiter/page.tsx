@@ -445,16 +445,40 @@ export default function RecruiterDashboard() {
                       className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-emerald-500 outline-none" 
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <input 
-                        type="date" 
-                        onChange={(e) => setOfferDetails({...offerDetails, [app.id]: {...offerDetails[app.id], joining_date: e.target.value}})}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-emerald-500 outline-none" 
-                      />
-                      <input 
-                        type="time" 
-                        onChange={(e) => setOfferDetails({...offerDetails, [app.id]: {...offerDetails[app.id], reporting_time: e.target.value}})}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-emerald-500 outline-none" 
-                      />
+                      <div className="relative w-full">
+                        <div 
+                          className="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer text-sm opacity-70 hover:opacity-100 transition-opacity"
+                          onClick={() => {
+                            const el = document.getElementById(`date-${app.id}`) as HTMLInputElement;
+                            if (el && el.showPicker) el.showPicker();
+                          }}
+                        >
+                          📅
+                        </div>
+                        <input 
+                          id={`date-${app.id}`}
+                          type="date" 
+                          onChange={(e) => setOfferDetails({...offerDetails, [app.id]: {...offerDetails[app.id], joining_date: e.target.value}})}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 pl-10 text-sm text-white focus:border-emerald-500 outline-none appearance-none" 
+                        />
+                      </div>
+                      <div className="relative w-full">
+                        <div 
+                          className="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer text-sm opacity-70 hover:opacity-100 transition-opacity"
+                          onClick={() => {
+                            const el = document.getElementById(`time-${app.id}`) as HTMLInputElement;
+                            if (el && el.showPicker) el.showPicker();
+                          }}
+                        >
+                          ⏰
+                        </div>
+                        <input 
+                          id={`time-${app.id}`}
+                          type="time" 
+                          onChange={(e) => setOfferDetails({...offerDetails, [app.id]: {...offerDetails[app.id], reporting_time: e.target.value}})}
+                          className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 pl-10 text-sm text-white focus:border-emerald-500 outline-none appearance-none" 
+                        />
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <input 
