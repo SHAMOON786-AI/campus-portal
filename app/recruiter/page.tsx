@@ -413,10 +413,17 @@ export default function RecruiterDashboard() {
                     <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">Schedule Interview</label>
                     <div className="flex gap-2">
                       <div className="relative w-full">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-sm opacity-70">
+                        <div 
+                          className="absolute inset-y-0 left-0 flex items-center pl-3 cursor-pointer text-sm opacity-70 hover:opacity-100 transition-opacity"
+                          onClick={() => {
+                            const el = document.getElementById(`datetime-${app.id}`) as HTMLInputElement;
+                            if (el && el.showPicker) el.showPicker();
+                          }}
+                        >
                           📅 <span className="ml-1">⏰</span>
                         </div>
                         <input 
+                          id={`datetime-${app.id}`}
                           type="datetime-local" 
                           onChange={(e) => setInterviewDates({...interviewDates, [app.id]: e.target.value})}
                           className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 pl-14 text-sm text-white focus:border-blue-500 outline-none appearance-none" 
